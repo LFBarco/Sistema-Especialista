@@ -1,0 +1,15 @@
+# Secretos y configuración
+.env
+.env.local
+
+# Dependencias (esta carpeta es pesadísima y no debe subirse)
+node_modules/
+
+# Archivos de compilación (dist o build)
+dist/
+build/
+
+# Logs y caché
+npm-debug.log*
+.eslintcache
+.vite/
