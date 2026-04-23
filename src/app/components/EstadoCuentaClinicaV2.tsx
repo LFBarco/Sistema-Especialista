@@ -7,7 +7,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { motion, AnimatePresence } from 'motion/react';
 import { RegistroPagosModal } from './RegistroPagosModal';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 export function EstadoCuentaClinicaV2() {
   const { darkMode, navegarA, facturas, servicios, especialistas, sedes: sedesContext, selectedSedeId, userClinicas } = useApp();

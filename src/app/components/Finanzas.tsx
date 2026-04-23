@@ -9,7 +9,7 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Badge } from './ui/badge';
 import { ClinicaFilter, getClinicaColor } from './ClinicaFilter';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 interface CuentaPorPagar {
   id: number;

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { X, DollarSign, Upload, Calendar, CreditCard, FileText } from 'lucide-react';
 import { useApp, type Factura } from '../App';
 import { motion, AnimatePresence } from 'motion/react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { storageAPI } from '../utils/api';
 
 interface RegistroPagosModalProps {

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { X, Send, Calendar, Clock, AlertCircle, Building2, User, Stethoscope } from 'lucide-react';
 import { useApp } from '../App';
 import { motion, AnimatePresence } from 'motion/react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 interface SolicitudServicioModalProps {
   isOpen: boolean;

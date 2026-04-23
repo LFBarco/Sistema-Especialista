@@ -32,7 +32,7 @@ import {
 import { Badge } from "./ui/badge";
 import { motion } from "motion/react";
 import { useState, useEffect } from "react";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 
 // Tipos para Usuarios de Clínica
 interface UsuarioClinica {

@@ -1,5 +1,5 @@
 import * as API from '../api';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 /**
  * Sistema de Polling como alternativa a Supabase Realtime

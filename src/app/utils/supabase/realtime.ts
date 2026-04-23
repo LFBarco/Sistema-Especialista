@@ -1,5 +1,5 @@
 import { supabase } from './client';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import * as API from '../api';
 import { startPolling } from './polling';
 

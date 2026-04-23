@@ -9,7 +9,7 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { motion } from 'motion/react';
 import { PagosMasivosModal } from './PagosMasivosModal';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 export function ConciliacionFinanciera() {
   const { darkMode, facturas, pagos, navegarA, registrarPagoFactura } = useApp();

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Check, X, Clock, MapPin, Calendar, User, FileText, ChevronDown, Activity, Plus, AlertCircle, Eye } from 'lucide-react';
 import { useApp } from '../App';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { ClinicaFilter, getClinicaColor } from './ClinicaFilter';
 import { motion, AnimatePresence } from 'motion/react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';

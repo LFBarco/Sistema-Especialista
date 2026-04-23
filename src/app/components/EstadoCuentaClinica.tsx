@@ -6,7 +6,7 @@ import { Badge } from './ui/badge';
 import { motion } from 'motion/react';
 import { RegistroPagosModal } from './RegistroPagosModal';
 import { storageAPI } from '../utils/api';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 export function EstadoCuentaClinica() {
   const { darkMode, navegarA, facturas, pagos, userClinicas } = useApp();

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Search, Filter, Download, Eye, FileText, Calendar, MapPin, DollarSign } from 'lucide-react';
 import { useApp } from '../App';
 import { ClinicaFilter, getClinicaColor } from './ClinicaFilter';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 export function Servicios() {
   const { servicios, darkMode, userClinicas, getClinicaByNombre, navegarA } = useApp();

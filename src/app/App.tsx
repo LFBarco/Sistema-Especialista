@@ -37,7 +37,7 @@ import { RegistroClinicaWizard } from './components/RegistroClinicaWizard';
 import { RegistroEspecialistaWizard } from './components/RegistroEspecialistaWizard';
 import { MobileNav } from './components/MobileNav';
 import { SpecialistDashboardMobile } from './components/mobile/SpecialistDashboardMobile';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { Toaster } from './components/ui/sonner';
 import * as API from './utils/api';
 import { supabase } from './utils/supabase/client';

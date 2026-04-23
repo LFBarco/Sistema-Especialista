@@ -25,11 +25,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(process.cwd(), './src'),
-      // Agregamos esta línea para forzar a Vite a encontrar el runtime de React
-      'react/jsx-runtime': 'react/jsx-runtime.js',
     },
   },
-  // Añadimos esto para asegurar que procese bien las dependencias en Vercel
   optimizeDeps: {
     include: ['react', 'react-dom'],
   },

@@ -10,7 +10,7 @@ import { Badge } from './ui/badge';
 import { Textarea } from './ui/textarea';
 import { Switch } from './ui/switch';
 import { ConfiguracionAgenda } from './ConfiguracionAgenda';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { systemAPI } from '../utils/api';
 
 interface ConfigItem {

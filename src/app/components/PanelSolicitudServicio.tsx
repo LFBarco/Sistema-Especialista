@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Calendar, Clock, User, FileText, AlertCircle, Building2, Stethoscope, Send, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../App';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 interface PanelSolicitudServicioProps {
   isOpen: boolean;

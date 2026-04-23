@@ -9,7 +9,7 @@ import { Textarea } from './ui/textarea';
 import { Badge } from './ui/badge';
 import { ClinicaFilter, getClinicaColor } from './ClinicaFilter';
 import { motion, AnimatePresence } from 'motion/react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 
 interface ConfiguracionFiscal {

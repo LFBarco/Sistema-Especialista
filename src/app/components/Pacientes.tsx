@@ -13,7 +13,7 @@ import { TimelineDerivaciones } from './TimelineDerivaciones';
 import { ConsultaClinicaWizard } from './ConsultaClinicaWizard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { PacientePerfilRestringido } from './PacientePerfilRestringido';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface Paciente {

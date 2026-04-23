@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { User, Mail, Phone, MapPin, Briefcase, DollarSign, Calendar, Clock, Save, Key, Sparkles } from 'lucide-react';
 import { useApp } from '../App';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import * as API from '../utils/api';
 
 export function Perfil() {
