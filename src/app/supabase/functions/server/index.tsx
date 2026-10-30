@@ -58,28 +58,31 @@ const getUploadUrl = async (bucket: string, path: string) => {
 }
 
 // Auth Middleware
+const PUBLIC_PATHS = [`${BASE_PATH}/signup`, `${BASE_PATH}/register-complete`];
+
 app.use(`${BASE_PATH}/*`, async (c, next) => {
-  if (c.req.path.includes('/public/')) {
-      return next();
+  if (c.req.method === 'OPTIONS' || PUBLIC_PATHS.includes(c.req.path)) {
+    return next();
   }
-  
+
   // User identity is passed in X-User-Token header.
   // Authorization header carries publicAnonKey for the Supabase gateway.
   const userToken = c.req.header('X-User-Token');
   if (!userToken) {
-    return next();
+    return c.json({ error: 'Sesión requerida' }, 401);
   }
 
   try {
-    const { data: { user }, error } = await supabase.auth.getUser(userToken);
-    if (user) {
-      c.set('user', user);
+    const { data: { user } } = await supabase.auth.getUser(userToken);
+    if (!user) {
+      return c.json({ error: 'Sesión inválida o expirada' }, 401);
     }
+    c.set('user', user);
   } catch (e) {
-    // Token validation failed — continue without user context
     console.log(`Auth middleware: failed to validate user token: ${e}`);
+    return c.json({ error: 'Sesión inválida o expirada' }, 401);
   }
-  
+
   await next();
 });
 
@@ -135,15 +138,12 @@ app.post(`${BASE_PATH}/register-complete`, async (c) => {
           return c.json({ error: 'El usuario existe pero no se pudo localizar. Contacta soporte.' }, 500);
         }
 
-        // Update password and metadata to match this registration attempt
-        const { error: updateError } = await supabase.auth.admin.updateUserById(existingUser.id, {
-          password,
-          user_metadata: { name, role: userType },
-        });
-
-        if (updateError) {
-          console.log(`register-complete: failed to update existing user ${email}: ${updateError.message}`);
-          return c.json({ error: `Error actualizando usuario existente: ${updateError.message}` }, 500);
+        // Only the owner of the account (same password) may resume a previous registration.
+        const anonClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') || '');
+        const { error: signInError } = await anonClient.auth.signInWithPassword({ email, password });
+        if (signInError) {
+          console.log(`register-complete: ${email} already registered and password does not match`);
+          return c.json({ error: 'Este correo ya está registrado. Inicia sesión o recupera tu contraseña.' }, 409);
         }
 
         userId = existingUser.id;
@@ -213,6 +213,7 @@ app.post(`${BASE_PATH}/register-complete`, async (c) => {
           rating: 0,
           serviciosRealizados: 0,
           verificacion: verificacion || { estado: 'pendiente' },
+          ownerId: userId,
         };
         await db.set(`especialistas:${especialistaId}`, especialistaRecord);
         console.log(`register-complete: especialista created ${nombre} ${apellido} (${especialistaId})`);
@@ -257,45 +258,167 @@ app.post(`${BASE_PATH}/register-complete`, async (c) => {
 
 // Specific routes FIRST (before generic CRUD to avoid :id capturing them)
 
+// Acceso a datos por usuario.
+// Un registro es visible si: es del usuario (ownerId), está dirigido a su ficha de especialista,
+// pertenece a una clínica suya, o cuelga de un registro visible (solicitud → servicio → factura → pago).
+// Los registros antiguos sin ownerId siguen visibles para todos, salvo los que llegan por integración.
+const ADMIN_EMAILS = (Deno.env.get('ADMIN_EMAILS') || '')
+    .split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+
+const esSuperAdmin = (user: any) =>
+    user?.app_metadata?.role === 'admin' ||
+    ADMIN_EMAILS.includes(String(user?.email || '').toLowerCase());
+
+const RECURSOS_COMPARTIDOS = new Set(['especialistas', 'roles']);
+
+const RECURSO_PADRE: Record<string, { recurso: string; campo: string }> = {
+    servicios: { recurso: 'solicitudes', campo: 'solicitudId' },
+    facturas: { recurso: 'servicios', campo: 'servicioId' },
+    pagos: { recurso: 'facturas', campo: 'facturaId' },
+    conciliaciones: { recurso: 'facturas', campo: 'facturaId' },
+};
+
+const crearAcceso = (user: any) => {
+    const cargas = new Map<string, Promise<any[]>>();
+    const cargar = (recurso: string) => {
+        if (!cargas.has(recurso)) cargas.set(recurso, db.getByPrefix(`${recurso}:`));
+        return cargas.get(recurso)!;
+    };
+
+    let contexto: Promise<{ esp: Set<string>; clin: Set<string> }> | null = null;
+    const obtenerContexto = () => contexto ??= (async () => {
+        const email = String(user?.email || '').toLowerCase();
+        const [esps, clins] = await Promise.all([cargar('especialistas'), cargar('clinicas')]);
+        return {
+            esp: new Set(esps
+                .filter((e: any) => email && String(e?.email || '').toLowerCase() === email)
+                .map((e: any) => String(e.id))),
+            clin: new Set(clins
+                .filter((cl: any) => cl?.ownerId && cl.ownerId === user?.id)
+                .map((cl: any) => String(cl.id))),
+        };
+    })();
+
+    const visiblesPorRecurso = new Map<string, Promise<Set<string>>>();
+    const idsVisibles = (recurso: string): Promise<Set<string>> => {
+        if (!visiblesPorRecurso.has(recurso)) {
+            visiblesPorRecurso.set(recurso, (async () => {
+                const items = await cargar(recurso);
+                const ids = new Set<string>();
+                for (const item of items) {
+                    if (await puedeVer(recurso, item)) ids.add(String(item.id));
+                }
+                return ids;
+            })());
+        }
+        return visiblesPorRecurso.get(recurso)!;
+    };
+
+    const puedeVer = async (recurso: string, item: any): Promise<boolean> => {
+        if (!item) return false;
+        if (esSuperAdmin(user) || RECURSOS_COMPARTIDOS.has(recurso)) return true;
+        if (item.ownerId && item.ownerId === user?.id) return true;
+
+        const ctx = await obtenerContexto();
+        const enEsp = (v: any) => v != null && ctx.esp.has(String(v));
+        if (enEsp(item.especialistaId) || enEsp(item.doctorPropietario?.id) || enEsp(item.doctorSolicitante?.id)) return true;
+        if (item.clinicaId != null && ctx.clin.has(String(item.clinicaId))) return true;
+
+        const padre = RECURSO_PADRE[recurso];
+        if (padre && item[padre.campo] != null) {
+            const ids = await idsVisibles(padre.recurso);
+            if (ids.has(String(item[padre.campo]))) return true;
+        }
+
+        if (item.ownerId) return false;
+        if (item.origen?.tipo === 'integracion') return false;
+        return true;
+    };
+
+    const puedeModificar = async (recurso: string, item: any): Promise<boolean> => {
+        if (esSuperAdmin(user)) return true;
+        if (recurso === 'especialistas') {
+            if (item.ownerId) return item.ownerId === user?.id;
+            const email = String(user?.email || '').toLowerCase();
+            return !item.email || (!!email && String(item.email).toLowerCase() === email);
+        }
+        return puedeVer(recurso, item);
+    };
+
+    return { cargar, puedeVer, puedeModificar };
+};
+
+const sinOwner = (body: any) => {
+    const { ownerId: _ownerId, ...resto } = body || {};
+    return resto;
+};
+
 // Generic CRUD handler factory
 const createHandler = (prefix: string) => {
     return {
         list: async (c: any) => {
             const user = c.get('user');
-            const data = await db.getByPrefix(`${prefix}:`);
-            
-            // RLS Logic
-            if (user) {
-                const role = user.user_metadata?.rol || 'admin';
-                const sedesIds = user.user_metadata?.sedesIds || [];
-                
-                if (role === 'admin') return c.json(data);
-                
-                // Filter based on sedeId if property exists
-                return c.json(data.filter((item: any) => {
-                    if (!item.sedeId) return true;
-                    if (sedesIds.includes(item.sedeId)) return true;
-                    return false;
-                }));
+            const acceso = crearAcceso(user);
+            const data = await acceso.cargar(prefix);
+
+            const visibles: any[] = [];
+            for (const item of data) {
+                if (await acceso.puedeVer(prefix, item)) visibles.push(item);
             }
-            
-            return c.json(data);
+
+            const role = user?.user_metadata?.rol || 'admin';
+            const sedesIds = user?.user_metadata?.sedesIds || [];
+            if (role === 'admin') return c.json(visibles);
+
+            return c.json(visibles.filter((item: any) => {
+                if (!item.sedeId) return true;
+                return sedesIds.includes(item.sedeId);
+            }));
         },
         create: async (c: any) => {
+            const user = c.get('user');
             const body = await c.req.json();
             const id = body.id || crypto.randomUUID();
-            await db.set(`${prefix}:${id}`, { ...body, id });
+            const key = `${prefix}:${id}`;
+
+            const existente = await db.get(key);
+            if (existente) {
+                const acceso = crearAcceso(user);
+                if (!(await acceso.puedeModificar(prefix, existente))) {
+                    return c.json({ error: 'No autorizado' }, 403);
+                }
+                const ownerId = existente.ownerId;
+                await db.set(key, { ...sinOwner(body), id, ...(ownerId ? { ownerId } : {}) });
+                return c.json({ success: true, id });
+            }
+
+            await db.set(key, { ...sinOwner(body), id, ownerId: user.id });
             return c.json({ success: true, id });
         },
         update: async (c: any) => {
+            const user = c.get('user');
             const id = c.req.param('id');
             const body = await c.req.json();
-            await db.set(`${prefix}:${id}`, { ...body, id });
+            const key = `${prefix}:${id}`;
+
+            const existente = await db.get(key);
+            if (existente && !(await crearAcceso(user).puedeModificar(prefix, existente))) {
+                return c.json({ error: 'No autorizado' }, 403);
+            }
+            const ownerId = existente ? existente.ownerId : user.id;
+            await db.set(key, { ...sinOwner(body), id, ...(ownerId ? { ownerId } : {}) });
             return c.json({ success: true });
         },
         delete: async (c: any) => {
+            const user = c.get('user');
             const id = c.req.param('id');
-            await db.del(`${prefix}:${id}`);
+            const key = `${prefix}:${id}`;
+
+            const existente = await db.get(key);
+            if (existente && !(await crearAcceso(user).puedeModificar(prefix, existente))) {
+                return c.json({ error: 'No autorizado' }, 403);
+            }
+            await db.del(key);
             return c.json({ success: true });
         }
     }
@@ -389,8 +512,11 @@ resources.forEach(resource => {
 });
 
 // Storage Endpoints
+const BUCKETS_PERMITIDOS = ['comprobantes'];
+
 app.post(`${BASE_PATH}/storage/upload-url`, async (c) => {
     const { bucket, path } = await c.req.json();
+    if (!BUCKETS_PERMITIDOS.includes(bucket)) return c.json({ error: 'Bucket no permitido' }, 403);
     try {
         const result = await getUploadUrl(bucket, path);
         return c.json(result);
@@ -401,6 +527,7 @@ app.post(`${BASE_PATH}/storage/upload-url`, async (c) => {
 
 app.post(`${BASE_PATH}/storage/signed-url`, async (c) => {
     const { bucket, path } = await c.req.json();
+    if (!BUCKETS_PERMITIDOS.includes(bucket)) return c.json({ error: 'Bucket no permitido' }, 403);
     try {
         const url = await getSignedUrl(bucket, path);
         return c.json({ url });
@@ -411,6 +538,7 @@ app.post(`${BASE_PATH}/storage/signed-url`, async (c) => {
 
 // Bulk create for seeding
 app.post(`${BASE_PATH}/seed`, async (c) => {
+    if (!esSuperAdmin(c.get('user'))) return c.json({ error: 'Solo administradores' }, 403);
     const { type, data } = await c.req.json();
     if (!Array.isArray(data)) return c.json({ error: 'Data must be an array' }, 400);
     
@@ -426,8 +554,38 @@ app.post(`${BASE_PATH}/seed`, async (c) => {
     return c.json({ success: true, count: data.length });
 });
 
+// Asigna al administrador los registros antiguos que no tienen dueño (ownerId).
+// No toca las solicitudes que llegaron por integración ni los recursos compartidos.
+const RECURSOS_CON_DUENO = [
+    'solicitudes', 'servicios', 'facturas', 'gastos', 'clinicas', 'sedes', 'usuarios',
+    'accesos', 'notificaciones', 'pagos', 'conciliaciones', 'facturacion-recurrente',
+    'descuentos', 'configuracion-servicios',
+];
+
+app.post(`${BASE_PATH}/admin/asignar-dueno`, async (c) => {
+    const user = c.get('user');
+    if (!esSuperAdmin(user)) return c.json({ error: 'Solo administradores' }, 403);
+    try {
+        const resumen: Record<string, number> = {};
+        let total = 0;
+        for (const recurso of RECURSOS_CON_DUENO) {
+            const filas = await db.getKeysByPrefix(`${recurso}:`);
+            const huerfanas = filas.filter((f: any) =>
+                f?.value && typeof f.value === 'object' && !f.value.ownerId && f.value.origen?.tipo !== 'integracion');
+            await Promise.all(huerfanas.map((f: any) => db.set(f.key, { ...f.value, ownerId: user.id })));
+            if (huerfanas.length > 0) resumen[recurso] = huerfanas.length;
+            total += huerfanas.length;
+        }
+        return c.json({ success: true, total, resumen });
+    } catch (e: any) {
+        console.log(`asignar-dueno error: ${e.message}`);
+        return c.json({ error: e.message }, 500);
+    }
+});
+
 // Reset Data Endpoint
 app.post(`${BASE_PATH}/reset-data`, async (c) => {
+    if (!esSuperAdmin(c.get('user'))) return c.json({ error: 'Solo administradores' }, 403);
     try {
         const resources = [
             'solicitudes', 'servicios', 'facturas', 'gastos', 'clinicas', 

@@ -1,0 +1,216 @@
+/**
+ * Temas de marca del portal especialista.
+ * data-brand="orange" | "teal" | "blue" en <html>
+ * .dark en <html> para modo oscuro
+ */
+
+/* ─── Opción A: Naranja clínico (default) ─── */
+:root,
+:root[data-brand='orange'] {
+  --brand: #ea580c;
+  --brand-hover: #c2410c;
+  --brand-soft: #f97316;
+  --brand-muted: rgba(234, 88, 12, 0.12);
+  --brand-muted-strong: rgba(234, 88, 12, 0.22);
+  --brand-foreground: #ffffff;
+  --brand-glow: rgba(234, 88, 12, 0.35);
+
+  --success: #059669;
+  --warning: #d97706;
+  --danger: #dc2626;
+  --info: #0284c8;
+
+  --surface: #ffffff;
+  --surface-muted: #f8fafc;
+  --surface-elevated: #ffffff;
+  --border-theme: #e2e8f0;
+  --text-theme: #0f172a;
+  --text-muted-theme: #64748b;
+
+  /* Alinear shadcn primary con la marca */
+  --primary: #ea580c;
+  --primary-foreground: #ffffff;
+  --sidebar-primary: #ea580c;
+  --ring: #ea580c;
+}
+
+.dark,
+.dark[data-brand='orange'],
+:root.dark[data-brand='orange'] {
+  --brand: #fb923c;
+  --brand-hover: #fdba74;
+  --brand-soft: #f97316;
+  --brand-muted: rgba(249, 115, 22, 0.15);
+  --brand-muted-strong: rgba(249, 115, 22, 0.28);
+  --brand-foreground: #0f172a;
+  --brand-glow: rgba(249, 115, 22, 0.4);
+
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --info: #38bdf8;
+
+  --surface: #0f172a;
+  --surface-muted: #1e293b;
+  --surface-elevated: #1e293b;
+  --border-theme: #334155;
+  --text-theme: #f8fafc;
+  --text-muted-theme: #94a3b8;
+
+  --primary: #fb923c;
+  --primary-foreground: #0f172a;
+  --sidebar-primary: #fb923c;
+  --ring: #fb923c;
+}
+
+/* ─── Opción B: Teal clínico ─── */
+:root[data-brand='teal'] {
+  --brand: #0f766e;
+  --brand-hover: #115e59;
+  --brand-soft: #14b8a6;
+  --brand-muted: rgba(15, 118, 110, 0.12);
+  --brand-muted-strong: rgba(15, 118, 110, 0.22);
+  --brand-foreground: #ffffff;
+  --brand-glow: rgba(15, 118, 110, 0.35);
+
+  --success: #059669;
+  --warning: #d97706;
+  --danger: #dc2626;
+  --info: #0284c8;
+
+  --surface: #ffffff;
+  --surface-muted: #f0fdfa;
+  --surface-elevated: #ffffff;
+  --border-theme: #e2e8f0;
+  --text-theme: #0f172a;
+  --text-muted-theme: #64748b;
+
+  --primary: #0f766e;
+  --primary-foreground: #ffffff;
+  --sidebar-primary: #0f766e;
+  --ring: #0f766e;
+}
+
+.dark[data-brand='teal'],
+:root.dark[data-brand='teal'] {
+  --brand: #2dd4bf;
+  --brand-hover: #5eead4;
+  --brand-soft: #14b8a6;
+  --brand-muted: rgba(45, 212, 191, 0.15);
+  --brand-muted-strong: rgba(45, 212, 191, 0.28);
+  --brand-foreground: #0f172a;
+  --brand-glow: rgba(45, 212, 191, 0.35);
+
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --info: #38bdf8;
+
+  --surface: #0f172a;
+  --surface-muted: #134e4a;
+  --surface-elevated: #1e293b;
+  --border-theme: #334155;
+  --text-theme: #f8fafc;
+  --text-muted-theme: #94a3b8;
+
+  --primary: #2dd4bf;
+  --primary-foreground: #0f172a;
+  --sidebar-primary: #2dd4bf;
+  --ring: #2dd4bf;
+}
+
+/* ─── Opción C: Azul institucional ─── */
+:root[data-brand='blue'] {
+  --brand: #1d4ed8;
+  --brand-hover: #1e40af;
+  --brand-soft: #3b82f6;
+  --brand-muted: rgba(29, 78, 216, 0.12);
+  --brand-muted-strong: rgba(29, 78, 216, 0.22);
+  --brand-foreground: #ffffff;
+  --brand-glow: rgba(29, 78, 216, 0.35);
+
+  --success: #059669;
+  --warning: #d97706;
+  --danger: #dc2626;
+  --info: #0284c8;
+
+  --surface: #ffffff;
+  --surface-muted: #f8fafc;
+  --surface-elevated: #ffffff;
+  --border-theme: #e2e8f0;
+  --text-theme: #0f172a;
+  --text-muted-theme: #64748b;
+
+  --primary: #1d4ed8;
+  --primary-foreground: #ffffff;
+  --sidebar-primary: #1d4ed8;
+  --ring: #1d4ed8;
+}
+
+.dark[data-brand='blue'],
+:root.dark[data-brand='blue'] {
+  --brand: #60a5fa;
+  --brand-hover: #93c5fd;
+  --brand-soft: #3b82f6;
+  --brand-muted: rgba(96, 165, 250, 0.15);
+  --brand-muted-strong: rgba(96, 165, 250, 0.28);
+  --brand-foreground: #0f172a;
+  --brand-glow: rgba(96, 165, 250, 0.4);
+
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --info: #38bdf8;
+
+  --surface: #0f172a;
+  --surface-muted: #1e3a5f;
+  --surface-elevated: #1e293b;
+  --border-theme: #334155;
+  --text-theme: #f8fafc;
+  --text-muted-theme: #94a3b8;
+
+  --primary: #60a5fa;
+  --primary-foreground: #0f172a;
+  --sidebar-primary: #60a5fa;
+  --ring: #60a5fa;
+}
+
+/* Utilidades de marca (usar en lugar de orange-500 hardcode) */
+.bg-brand {
+  background-color: var(--brand) !important;
+  color: var(--brand-foreground) !important;
+}
+.bg-brand:hover,
+.hover\:bg-brand-hover:hover {
+  background-color: var(--brand-hover) !important;
+}
+.bg-brand-muted {
+  background-color: var(--brand-muted) !important;
+}
+.text-brand {
+  color: var(--brand) !important;
+}
+.border-brand {
+  border-color: var(--brand) !important;
+}
+.ring-brand {
+  --tw-ring-color: var(--brand);
+}
+.bg-surface-app {
+  background-color: var(--surface-muted);
+}
+.bg-surface {
+  background-color: var(--surface);
+}
+.text-theme {
+  color: var(--text-theme);
+}
+.text-muted-theme {
+  color: var(--text-muted-theme);
+}
+
+/* Gradiente del logo mark (único lugar permitido) */
+.brand-mark {
+  background: linear-gradient(135deg, var(--brand-soft) 0%, var(--brand) 100%);
+  box-shadow: 0 4px 12px -2px var(--brand-glow);
+}

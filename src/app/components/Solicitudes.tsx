@@ -10,7 +10,10 @@ import { TimelineProgreso } from './TimelineProgreso';
 type ViewMode = 'compact' | 'expanded';
 
 export function Solicitudes() {
-  const { solicitudes, aceptarSolicitud, rechazarSolicitud, darkMode, userClinicas, getClinicaByNombre, crearSolicitud, rolActivo, configServicios } = useApp();
+  const { solicitudes, aceptarSolicitud, rechazarSolicitud, darkMode, userClinicas, getClinicaByNombre, crearSolicitud, rolActivo, configServicios, especialistas, usuarioActual, navegarA } = useApp();
+  const miEspecialista = especialistas.find(
+    e => !!usuarioActual?.email && e.email?.toLowerCase() === usuarioActual.email.toLowerCase()
+  );
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [selectedClinica, setSelectedClinica] = useState('todas');
   const [showNuevaSolicitudModal, setShowNuevaSolicitudModal] = useState(false);
@@ -105,6 +108,8 @@ export function Solicitudes() {
     // Crear solicitud
     const nuevaSolicitud = {
       clinica: clinicaObj.nombre,
+      clinicaId: String(clinicaObj.id),
+      especialistaId: miEspecialista?.id as number,
       tipo: formData.tipo,
       paciente: formData.paciente,
       especie: formData.especie,
@@ -141,14 +146,28 @@ export function Solicitudes() {
     }
   };
 
-  const handleAceptarSolicitud = (id: number, paciente: string, fecha: string) => {
-    aceptarSolicitud(id);
-    toast.success(`Cita agendada para ${paciente} el ${new Date(fecha).toLocaleDateString('es-ES')}`);
+  const handleAceptarSolicitud = async (id: number) => {
+    const sol = solicitudes.find((s) => s.id === id);
+    await aceptarSolicitud(id);
+    toast.success(sol ? `«${sol.paciente}» agendada` : 'Solicitud aceptada', {
+      description: sol ? `${sol.fechaSolicitada} ${sol.horaSolicitada} · ${sol.clinica}` : undefined,
+      action: {
+        label: 'Ver agenda',
+        onClick: () => navegarA('agenda'),
+      },
+    });
   };
 
-  const handleRechazarSolicitud = (id: number) => {
-    rechazarSolicitud(id);
-    toast.info('Solicitud rechazada');
+  const abrirRechazo = (id: number) => {
+    setRechazandoId(id);
+    setMotivoRechazo('');
+  };
+
+  const confirmarRechazo = () => {
+    if (rechazandoId === null) return;
+    rechazarSolicitud(rechazandoId, motivoRechazo);
+    setRechazandoId(null);
+    setMotivoRechazo('');
   };
 
   const [filtroUrgencia, setFiltroUrgencia] = useState<string>('todas');
@@ -199,6 +218,12 @@ export function Solicitudes() {
       color: darkMode ? '#6B7280' : '#9CA3AF',
       bg: darkMode ? 'rgba(107, 114, 128, 0.15)' : 'rgba(156, 163, 175, 0.1)',
       border: darkMode ? 'rgba(107, 114, 128, 0.3)' : 'rgba(156, 163, 175, 0.2)'
+    },
+    cancelada: { 
+      label: 'Cancelada',
+      color: '#EF4444',
+      bg: darkMode ? 'rgba(239, 68, 68, 0.12)' : 'rgba(239, 68, 68, 0.08)',
+      border: darkMode ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.2)'
     }
   };
 
@@ -373,6 +398,7 @@ export function Solicitudes() {
             <option value="pendiente">Pendientes</option>
             <option value="aceptada">Aceptadas</option>
             <option value="rechazada">Rechazadas</option>
+            <option value="cancelada">Canceladas</option>
           </select>
 
           <ClinicaFilter
@@ -387,8 +413,8 @@ export function Solicitudes() {
       <div className="space-y-3">
         <AnimatePresence mode="popLayout">
           {solicitudesFiltradas.map((solicitud) => {
-            const urgencia = urgenciaConfig[solicitud.urgencia];
-            const estado = estadoConfig[solicitud.estado];
+            const urgencia = urgenciaConfig[solicitud.urgencia] || urgenciaConfig.media;
+            const estado = estadoConfig[solicitud.estado] || estadoConfig.pendiente;
             const isExpanded = expandedId === solicitud.id;
             const isHovered = hoveredId === solicitud.id;
             const clinica = getClinicaByNombre(solicitud.clinica);
@@ -468,6 +494,20 @@ export function Solicitudes() {
                         >
                           Urgencia {urgencia.label}
                         </div>
+                        {solicitud.origen?.tipo === 'integracion' && (
+                          <div
+                            className="px-2.5 py-1 rounded-lg text-xs font-semibold border flex items-center gap-1"
+                            style={{
+                              backgroundColor: darkMode ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.08)',
+                              borderColor: darkMode ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.2)',
+                              color: '#3B82F6'
+                            }}
+                            title={solicitud.origen.referenciaExterna ? `Referencia: ${solicitud.origen.referenciaExterna}` : undefined}
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            vía {solicitud.origen.integradorNombre}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -477,7 +517,7 @@ export function Solicitudes() {
                         className="text-2xl font-bold mb-1"
                         style={{ color: '#F97316' }}
                       >
-                        ${solicitud.tarifa.toLocaleString()}
+                        S/ {solicitud.tarifa.toLocaleString()}
                       </p>
                       <p 
                         className="text-xs"
@@ -624,6 +664,62 @@ export function Solicitudes() {
                               {solicitud.descripcion}
                             </p>
                           </div>
+
+                          {solicitud.pacienteDetalle?.propietario && (
+                            <div
+                              className="rounded-lg border p-3 text-sm"
+                              style={{
+                                borderColor: darkMode ? '#1F2937' : '#E2E8F0',
+                                backgroundColor: darkMode ? 'rgba(31,41,55,0.4)' : '#F8FAFC',
+                                color: darkMode ? '#E5E7EB' : '#0F172A',
+                              }}
+                            >
+                              <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: darkMode ? '#6B7280' : '#9CA3AF' }}>
+                                Tutor
+                              </p>
+                              <p className="font-medium">{solicitud.pacienteDetalle.propietario.nombre || '—'}</p>
+                              {(solicitud.pacienteDetalle.propietario.telefono || solicitud.pacienteDetalle.propietario.email) && (
+                                <p className="text-xs mt-0.5" style={{ color: darkMode ? '#9CA3AF' : '#64748B' }}>
+                                  {[solicitud.pacienteDetalle.propietario.telefono, solicitud.pacienteDetalle.propietario.email].filter(Boolean).join(' · ')}
+                                </p>
+                              )}
+                            </div>
+                          )}
+
+                          {solicitud.accesoHistoria?.url && (() => {
+                            const expirado = solicitud.accesoHistoria.expiraEn
+                              && new Date(solicitud.accesoHistoria.expiraEn).getTime() < Date.now();
+                            return (
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                                <a
+                                  href={expirado ? undefined : solicitud.accesoHistoria!.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => {
+                                    if (expirado) {
+                                      e.preventDefault();
+                                      toast.error('El acceso a la historia clínica expiró. Pide a la clínica que lo renueve.');
+                                    }
+                                  }}
+                                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-white"
+                                  style={{
+                                    backgroundColor: expirado ? '#9CA3AF' : '#2563EB',
+                                    pointerEvents: expirado ? 'none' : 'auto',
+                                    opacity: expirado ? 0.7 : 1,
+                                  }}
+                                >
+                                  <ExternalLink className="w-4 h-4" />
+                                  {expirado ? 'Acceso a ficha expirado' : 'Ver historia clínica'}
+                                </a>
+                                {solicitud.accesoHistoria.expiraEn && !expirado && (
+                                  <span className="text-xs" style={{ color: darkMode ? '#9CA3AF' : '#64748B' }}>
+                                    Válido hasta {new Date(solicitud.accesoHistoria.expiraEn).toLocaleString('es-PE')}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })()}
+
                           <div className="flex items-start gap-2">
                             <MapPin 
                               className="w-4 h-4 mt-0.5 flex-shrink-0" 
@@ -651,8 +747,62 @@ export function Solicitudes() {
                 </div>
 
                 {/* Actions - Solo visible en hover para pendientes Y solo si es ESPECIALISTA */}
+                {rechazandoId === solicitud.id && solicitud.estado === 'pendiente' && rolActivo === 'especialista' && (
+                  <div
+                    className="px-6 py-4 border-t space-y-3"
+                    style={{
+                      backgroundColor: darkMode ? 'rgba(31, 41, 55, 0.5)' : '#F8FAFC',
+                      borderColor: darkMode ? '#1F2937' : '#E2E8F0'
+                    }}
+                  >
+                    <label
+                      className="text-xs font-semibold uppercase tracking-wider block"
+                      style={{ color: darkMode ? '#9CA3AF' : '#64748B' }}
+                    >
+                      Motivo del rechazo (la clínica lo verá)
+                    </label>
+                    <textarea
+                      rows={2}
+                      autoFocus
+                      maxLength={500}
+                      placeholder="Ej: No tengo disponibilidad ese día, propongo el jueves por la tarde"
+                      value={motivoRechazo}
+                      onChange={(e) => setMotivoRechazo(e.target.value)}
+                      className="w-full px-4 py-2 border rounded-lg focus:outline-none text-sm resize-none"
+                      style={{
+                        backgroundColor: darkMode ? 'rgba(17, 24, 39, 0.8)' : '#FFFFFF',
+                        borderColor: darkMode ? '#374151' : '#E2E8F0',
+                        color: darkMode ? '#E5E7EB' : '#0F172A'
+                      }}
+                    />
+                    <div className="flex justify-end gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setRechazandoId(null)}
+                        className="px-4 py-2 text-sm rounded-lg font-medium border"
+                        style={{
+                          backgroundColor: darkMode ? 'rgba(31, 41, 55, 0.5)' : '#FFFFFF',
+                          borderColor: darkMode ? '#374151' : '#E2E8F0',
+                          color: darkMode ? '#E5E7EB' : '#0F172A'
+                        }}
+                      >
+                        Volver
+                      </button>
+                      <button
+                        type="button"
+                        onClick={confirmarRechazo}
+                        className="px-4 py-2 text-sm text-white rounded-lg font-medium flex items-center gap-2"
+                        style={{ backgroundColor: '#EF4444' }}
+                      >
+                        <X className="w-4 h-4" />
+                        Confirmar rechazo
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <AnimatePresence>
-                  {solicitud.estado === 'pendiente' && rolActivo === 'especialista' && (
+                  {solicitud.estado === 'pendiente' && rolActivo === 'especialista' && rechazandoId !== solicitud.id && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ 
@@ -670,7 +820,7 @@ export function Solicitudes() {
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={() => handleRechazarSolicitud(solicitud.id)}
+                        onClick={() => abrirRechazo(solicitud.id)}
                         className="px-4 py-2 text-sm rounded-lg transition-all flex items-center gap-2 font-medium border"
                         style={{
                           backgroundColor: darkMode ? 'rgba(31, 41, 55, 0.5)' : '#FFFFFF',
@@ -685,7 +835,7 @@ export function Solicitudes() {
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={() => handleAceptarSolicitud(solicitud.id, solicitud.paciente, solicitud.fechaSolicitada)}
+                        onClick={() => handleAceptarSolicitud(solicitud.id)}
                         className="px-4 py-2 text-sm text-white rounded-lg transition-all shadow-lg flex items-center gap-2 font-medium"
                         style={{ backgroundColor: '#22C55E' }}
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#16A34A'}
@@ -720,7 +870,7 @@ export function Solicitudes() {
                 {/* Estado aceptada */}
                 {solicitud.estado === 'aceptada' && (
                   <div 
-                    className="px-6 py-3 border-t"
+                    className="px-6 py-3 border-t flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
                     style={{
                       backgroundColor: darkMode ? 'rgba(34, 197, 94, 0.1)' : 'rgba(34, 197, 94, 0.05)',
                       borderColor: darkMode ? 'rgba(34, 197, 94, 0.2)' : 'rgba(34, 197, 94, 0.15)'
@@ -731,8 +881,19 @@ export function Solicitudes() {
                       style={{ color: '#22C55E' }}
                     >
                       <Check className="w-4 h-4" />
-                      Solicitud aceptada y agregada a tu agenda
+                      Aceptada y en tu agenda
                     </p>
+                    {solicitud.accesoHistoria?.url && (
+                      <a
+                        href={solicitud.accesoHistoria.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:underline"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        Ver historia clínica
+                      </a>
+                    )}
                   </div>
                 )}
 
@@ -751,6 +912,32 @@ export function Solicitudes() {
                     >
                       <X className="w-4 h-4" />
                       Solicitud rechazada
+                    </p>
+                    {solicitud.motivoRechazo && (
+                      <p
+                        className="text-sm mt-1 ml-6"
+                        style={{ color: darkMode ? '#9CA3AF' : '#6B7280' }}
+                      >
+                        Motivo: {solicitud.motivoRechazo}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {solicitud.estado === 'cancelada' && (
+                  <div 
+                    className="px-6 py-3 border-t"
+                    style={{
+                      backgroundColor: estadoConfig.cancelada.bg,
+                      borderColor: estadoConfig.cancelada.border
+                    }}
+                  >
+                    <p 
+                      className="text-sm font-medium flex items-center gap-2"
+                      style={{ color: estadoConfig.cancelada.color }}
+                    >
+                      <X className="w-4 h-4" />
+                      La clínica canceló esta solicitud
                     </p>
                   </div>
                 )}
@@ -858,7 +1045,7 @@ export function Solicitudes() {
                       <option value="">Selecciona un tipo de servicio</option>
                       {configServicios.filter(s => s.activo).map((servicio) => (
                         <option key={servicio.id} value={servicio.nombre}>
-                          {servicio.nombre} {servicio.metadata?.precio ? `($${servicio.metadata.precio.toLocaleString()})` : ''}
+                          {servicio.nombre} {servicio.metadata?.precio ? `(S/ ${servicio.metadata.precio.toLocaleString()})` : ''}
                         </option>
                       ))}
                     </select>

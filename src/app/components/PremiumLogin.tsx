@@ -1,6 +1,9 @@
 import { useState } from 'react';
-import { Eye, EyeOff, Mail, Lock, Activity, CheckCircle2, Clock, TrendingUp, Chrome, Shield, Moon, Sun, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, Activity, CheckCircle2, Clock, TrendingUp, Chrome, Shield, AlertCircle } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useApp } from '../App';
+import { ThemePicker } from './ThemePicker';
+import { brandHex } from '../utils/theme';
 
 interface PremiumLoginProps {
   onLogin: (email: string, password: string, userType: 'clinic' | 'specialist') => void;
@@ -10,24 +13,22 @@ interface PremiumLoginProps {
 }
 
 export function PremiumLogin({ onLogin, onGoogleLogin, onRegister, onDemoLogin }: PremiumLoginProps) {
+  const { darkMode, brandTheme, brandColor } = useApp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [userType, setUserType] = useState<'clinic' | 'specialist'>('specialist');
   const [focusedField, setFocusedField] = useState<string | null>(null);
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [showSetupGuide, setShowSetupGuide] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onLogin(email, password, userType);
+    onLogin(email, password, 'specialist');
   };
 
-  const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
-  };
+  const theme = darkMode ? 'dark' : 'light';
+  const primary = brandColor;
+  const primaryHover = brandHex(brandTheme, false);
 
-  // Theme colors - Orange instead of Blue
   const colors = {
     dark: {
       bg: '#0B0F1A',
@@ -38,11 +39,11 @@ export function PremiumLogin({ onLogin, onGoogleLogin, onRegister, onDemoLogin }
       text: '#E5E7EB',
       textMuted: '#9CA3AF',
       textDim: '#6B7280',
-      primary: '#F97316', // Orange
-      primaryHover: '#EA580C',
-      primaryDark: '#C2410C',
-      primaryLight: 'rgba(249, 115, 22, 0.1)',
-      accent: '#8B5CF6',
+      primary,
+      primaryHover,
+      primaryDark: primaryHover,
+      primaryLight: 'var(--brand-muted)',
+      accent: 'var(--info)',
       success: '#22C55E',
       warning: '#FACC15',
       inputBg: 'rgba(31, 41, 55, 0.5)',
@@ -57,11 +58,11 @@ export function PremiumLogin({ onLogin, onGoogleLogin, onRegister, onDemoLogin }
       text: '#0F172A',
       textMuted: '#475569',
       textDim: '#64748B',
-      primary: '#F97316', // Orange
-      primaryHover: '#EA580C',
-      primaryDark: '#C2410C',
-      primaryLight: 'rgba(249, 115, 22, 0.1)',
-      accent: '#8B5CF6',
+      primary,
+      primaryHover,
+      primaryDark: primaryHover,
+      primaryLight: 'var(--brand-muted)',
+      accent: 'var(--info)',
       success: '#22C55E',
       warning: '#FACC15',
       inputBg: '#F1F5F9',
@@ -73,23 +74,16 @@ export function PremiumLogin({ onLogin, onGoogleLogin, onRegister, onDemoLogin }
 
   return (
     <div className="min-h-screen flex transition-colors duration-300" style={{ backgroundColor: c.bg }}>
-      {/* Theme Toggle - Fixed top right */}
-      <motion.button
-        onClick={toggleTheme}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        className="fixed top-6 right-6 z-50 p-3 rounded-xl shadow-lg transition-all duration-200"
+      {/* Selector de tema — esquina superior derecha */}
+      <div
+        className="fixed top-6 right-6 z-50 px-3 py-2 rounded-xl shadow-lg"
         style={{
           backgroundColor: c.card,
           border: `1px solid ${c.border}`,
         }}
       >
-        {theme === 'dark' ? (
-          <Sun className="w-5 h-5" style={{ color: c.primary }} />
-        ) : (
-          <Moon className="w-5 h-5" style={{ color: c.primary }} />
-        )}
-      </motion.button>
+        <ThemePicker variant="compact" />
+      </div>
 
       <div className="w-full max-w-[1600px] mx-auto flex">
         {/* LEFT SIDE - Access Zone (35%) */}
@@ -237,79 +231,22 @@ export function PremiumLogin({ onLogin, onGoogleLogin, onRegister, onDemoLogin }
                 border: `1px solid ${c.border}`
               }}
             >
-              {/* Role Selector */}
-              <div className="mb-6">
-                <label className="text-xs font-semibold uppercase tracking-wide mb-3 block" style={{ color: c.textMuted }}>
-                  Tipo de acceso
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <motion.button
-                    type="button"
-                    onClick={() => setUserType('clinic')}
-                    whileTap={{ scale: 0.98 }}
-                    className="relative px-4 py-3 rounded-lg border-2 transition-all duration-200"
-                    style={{
-                      backgroundColor: userType === 'clinic' ? c.primaryLight : 'transparent',
-                      borderColor: userType === 'clinic' ? c.primary : c.border,
-                      color: userType === 'clinic' ? c.text : c.textDim,
-                    }}
-                  >
-                    <div className="flex flex-col items-center gap-1.5">
-                      <div 
-                        className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-                        style={{ backgroundColor: userType === 'clinic' ? c.primary : c.border }}
-                      >
-                        <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
-                      </div>
-                      <span className="text-xs font-medium">Clínica</span>
-                    </div>
-                    {userType === 'clinic' && (
-                      <motion.div
-                        layoutId="activeIndicator"
-                        className="absolute inset-0 rounded-lg ring-2 ring-offset-2"
-                        style={{ 
-                          ringColor: c.primary,
-                          ringOffsetColor: c.bg 
-                        }}
-                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      />
-                    )}
-                  </motion.button>
-
-                  <motion.button
-                    type="button"
-                    onClick={() => setUserType('specialist')}
-                    whileTap={{ scale: 0.98 }}
-                    className="relative px-4 py-3 rounded-lg border-2 transition-all duration-200"
-                    style={{
-                      backgroundColor: userType === 'specialist' ? c.primaryLight : 'transparent',
-                      borderColor: userType === 'specialist' ? c.primary : c.border,
-                      color: userType === 'specialist' ? c.text : c.textDim,
-                    }}
-                  >
-                    <div className="flex flex-col items-center gap-1.5">
-                      <div 
-                        className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-                        style={{ backgroundColor: userType === 'specialist' ? c.primary : c.border }}
-                      >
-                        <Activity className="w-4 h-4 text-white" strokeWidth={2.5} />
-                      </div>
-                      <span className="text-xs font-medium">Especialista</span>
-                    </div>
-                    {userType === 'specialist' && (
-                      <motion.div
-                        layoutId="activeIndicator"
-                        className="absolute inset-0 rounded-lg ring-2 ring-offset-2"
-                        style={{ 
-                          ringColor: c.primary,
-                          ringOffsetColor: c.bg 
-                        }}
-                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      />
-                    )}
-                  </motion.button>
+              {/* Este portal es del especialista; las clínicas trabajan en Veterinari. */}
+              <div
+                className="mb-6 flex items-center gap-3 px-4 py-3 rounded-lg border"
+                style={{ backgroundColor: c.primaryLight, borderColor: c.primary }}
+              >
+                <div
+                  className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: c.primary }}
+                >
+                  <Activity className="w-4 h-4 text-white" strokeWidth={2.5} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: c.text }}>Portal del especialista</p>
+                  <p className="text-xs" style={{ color: c.textDim }}>
+                    Solicitudes, agenda, informes y honorarios. La clínica opera en su propio sistema.
+                  </p>
                 </div>
               </div>
 

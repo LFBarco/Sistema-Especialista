@@ -339,7 +339,7 @@ export function MetricasClinica() {
                     Total Invertido
                   </p>
                   <p className={`text-3xl font-bold mt-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                    ${totalInvertido.toLocaleString()}
+                    S/ {totalInvertido.toLocaleString()}
                   </p>
                   <p className={`text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
                     En servicios especializados
@@ -367,7 +367,7 @@ export function MetricasClinica() {
                     Promedio por Servicio
                   </p>
                   <p className={`text-3xl font-bold mt-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                    ${Math.round(promedioServicio).toLocaleString()}
+                    S/ {Math.round(promedioServicio).toLocaleString()}
                   </p>
                   <p className={`text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
                     Costo promedio unitario
@@ -487,7 +487,7 @@ export function MetricasClinica() {
                         color: darkMode ? '#FFFFFF' : '#000000'
                       }}
                       formatter={(value: any, name: string) => {
-                        if (name === 'monto') return [`$${value.toLocaleString()}`, 'Monto'];
+                        if (name === 'monto') return [`S/ ${value.toLocaleString()}`, 'Monto'];
                         return [value, 'Cantidad'];
                       }}
                     />
@@ -541,7 +541,7 @@ export function MetricasClinica() {
                     <div className="flex items-end justify-between">
                       <div>
                         <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                          ${cat.monto.toLocaleString()}
+                          S/ {cat.monto.toLocaleString()}
                         </p>
                         <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-600'}`}>
                           {Math.round(porcentajeMonto)}% del total pendiente
@@ -581,7 +581,7 @@ export function MetricasClinica() {
                   </p>
                   <p className={`text-sm mt-1 ${darkMode ? 'text-red-300' : 'text-red-600'}`}>
                     Tienes {antiguedadCuentas[3].cantidad} factura{antiguedadCuentas[3].cantidad !== 1 ? 's' : ''} con más de 61 días de antigüedad 
-                    por un total de ${antiguedadCuentas[3].monto.toLocaleString()}. 
+                    por un total de S/ {antiguedadCuentas[3].monto.toLocaleString()}. 
                     Se recomienda gestionar estos pagos prioritariamente.
                   </p>
                 </div>
@@ -666,7 +666,7 @@ export function MetricasClinica() {
                       {esp.cantidad} servicios
                     </p>
                     <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      ${esp.monto.toLocaleString()}
+                      S/ {esp.monto.toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -717,7 +717,7 @@ export function MetricasClinica() {
                         border: `1px solid ${darkMode ? '#374151' : '#E5E7EB'}`,
                         borderRadius: '8px'
                       }}
-                      formatter={(value: any) => `$${value.toLocaleString()}`}
+                      formatter={(value: any) => `S/ ${value.toLocaleString()}`}
                     />
                   </RechartsPie>
                 </ResponsiveContainer>
@@ -746,7 +746,7 @@ export function MetricasClinica() {
                     </div>
                     <div className="text-right">
                       <p className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        ${esp.value.toLocaleString()}
+                        S/ {esp.value.toLocaleString()}
                       </p>
                       <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                         {porcentaje.toFixed(1)}%
@@ -806,7 +806,7 @@ export function MetricasClinica() {
                       borderRadius: '8px'
                     }}
                     formatter={(value: any, name: string) => {
-                      if (name === 'monto') return [`$${value.toLocaleString()}`, 'Inversión'];
+                      if (name === 'monto') return [`S/ ${value.toLocaleString()}`, 'Inversión'];
                       return [value, 'Servicios'];
                     }}
                   />
@@ -901,7 +901,7 @@ export function MetricasClinica() {
                       </p>
                     </div>
                     <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      {esp.cantidad} servicios • ${esp.monto.toLocaleString()}
+                      {esp.cantidad} servicios • S/ {esp.monto.toLocaleString()}
                     </p>
                   </div>
                 );

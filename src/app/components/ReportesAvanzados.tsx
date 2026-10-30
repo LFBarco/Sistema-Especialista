@@ -174,15 +174,15 @@ export function ReportesAvanzados() {
         `Generado: ${new Date().toLocaleDateString('es-MX')}`,
         '',
         'RESUMEN',
-        `Total Ingresos,$${totalIngresos.toLocaleString()}`,
+        `Total Ingresos,S/ ${totalIngresos.toLocaleString()}`,
         `Total Servicios,${totalServiciosPeriodo}`,
         `Crecimiento,${crecimiento}%`,
-        `Promedio Mensual,$${promedioMensual.toLocaleString()}`,
-        `Ticket Promedio,$${ticketPromedio.toLocaleString()}`,
+        `Promedio Mensual,S/ ${promedioMensual.toLocaleString()}`,
+        `Ticket Promedio,S/ ${ticketPromedio.toLocaleString()}`,
         '',
         'SERVICIOS POR TIPO',
         'Tipo,Cantidad,Valor',
-        ...serviciosPorTipo.map(s => `${s.tipo},${s.cantidad},$${s.valor.toLocaleString()}`),
+        ...serviciosPorTipo.map(s => `${s.tipo},${s.cantidad},S/ ${s.valor.toLocaleString()}`),
         '',
         'DISTRIBUCIÓN POR CLÍNICA',
         'Clínica,Cantidad,Porcentaje',
@@ -191,7 +191,7 @@ export function ReportesAvanzados() {
         'DETALLE DE SERVICIOS',
         'Fecha,Clínica,Tipo,Paciente,Especie,Estado,Tarifa',
         ...serviciosFiltrados.map(s =>
-          `${s.fecha},${s.clinica},${s.tipo},${s.paciente},${s.especie},${s.estado},$${s.tarifa}`
+          `${s.fecha},${s.clinica},${s.tipo},${s.paciente},${s.especie},${s.estado},S/ ${s.tarifa}`
         ),
       ];
 
@@ -295,7 +295,7 @@ export function ReportesAvanzados() {
                       Ingresos Totales
                     </p>
                     <p className={`text-3xl font-bold mt-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                      ${totalIngresos.toLocaleString()}
+                      S/ {totalIngresos.toLocaleString()}
                     </p>
                     <p className={`text-xs mt-2 ${crecimiento >= 0 ? (darkMode ? 'text-green-400' : 'text-green-600') : (darkMode ? 'text-red-400' : 'text-red-600')}`}>
                       {crecimiento >= 0 ? '+' : ''}{crecimiento}% vs período anterior
@@ -316,7 +316,7 @@ export function ReportesAvanzados() {
                       Promedio Mensual
                     </p>
                     <p className={`text-3xl font-bold mt-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                      ${promedioMensual.toLocaleString()}
+                      S/ {promedioMensual.toLocaleString()}
                     </p>
                     <p className={`text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
                       En el período seleccionado
@@ -358,7 +358,7 @@ export function ReportesAvanzados() {
                       Ticket Promedio
                     </p>
                     <p className={`text-3xl font-bold mt-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                      ${ticketPromedio.toLocaleString()}
+                      S/ {ticketPromedio.toLocaleString()}
                     </p>
                     <p className={`text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
                       Por servicio
@@ -402,7 +402,7 @@ export function ReportesAvanzados() {
                           color: darkMode ? '#FFFFFF' : '#000000'
                         }}
                         formatter={(value: any, name: string) => {
-                          if (name === 'Ingresos ($)') return [`$${value.toLocaleString()}`, name];
+                          if (name === 'Ingresos ($)') return [`S/ ${value.toLocaleString()}`, name];
                           return [value, name];
                         }}
                       />
@@ -573,7 +573,7 @@ export function ReportesAvanzados() {
                                 {servicio.tipo}
                               </p>
                               <p className={`font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
-                                ${servicio.valor.toLocaleString()}
+                                S/ {servicio.valor.toLocaleString()}
                               </p>
                             </div>
                             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">

@@ -314,7 +314,7 @@ export function DashboardClinica() {
                       <DollarSign className="w-4 h-4 text-green-500" />
                     </div>
                     <p className={`text-lg font-black ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                      ${especialista.tarifa}
+                      S/ {especialista.tarifa}
                     </p>
                     <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-600'}`}>
                       Tarifa
@@ -501,7 +501,7 @@ export function DashboardClinica() {
                         </p>
                       </div>
                       <span className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        ${solicitud.tarifa}
+                        S/ {solicitud.tarifa}
                       </span>
                     </div>
                   </div>

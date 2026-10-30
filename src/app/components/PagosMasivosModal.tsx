@@ -261,7 +261,7 @@ export function PagosMasivosModal({ isOpen, onClose }: PagosMasivosModalProps) {
           montoFactura: factura.total,
           clinica: factura.clinica,
           diferencia,
-          mensaje: `Diferencia de $${Math.abs(diferencia).toLocaleString()} (${diferencia > 0 ? 'sobrepago' : 'pago parcial'})`,
+          mensaje: `Diferencia de S/ ${Math.abs(diferencia).toLocaleString()} (${diferencia > 0 ? 'sobrepago' : 'pago parcial'})`,
           fila: pago.fila,
           datosCompletos: pago
         });
@@ -867,10 +867,10 @@ export function PagosMasivosModal({ isOpen, onClose }: PagosMasivosModalProps) {
                               {resultado.clinica || '-'}
                             </td>
                             <td className={`p-4 font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                              ${resultado.montoExcel.toLocaleString()}
+                              S/ {resultado.montoExcel.toLocaleString()}
                             </td>
                             <td className={`p-4 font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                              {resultado.montoFactura ? `$${resultado.montoFactura.toLocaleString()}` : '-'}
+                              {resultado.montoFactura ? `S/ ${resultado.montoFactura.toLocaleString()}` : '-'}
                             </td>
                             <td className="p-4">
                               <span 

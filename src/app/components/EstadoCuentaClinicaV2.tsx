@@ -194,7 +194,7 @@ export function EstadoCuentaClinicaV2() {
       ...datosPago
     });
     
-    toast.success(`Pago masivo registrado: $${totalSeleccionado.toLocaleString()} por ${facturasSeleccionadas.length} facturas`);
+    toast.success(`Pago masivo registrado: S/ ${totalSeleccionado.toLocaleString()} por ${facturasSeleccionadas.length} facturas`);
     setShowPagoMasivo(false);
     setFacturasSeleccionadas([]);
   };
@@ -422,7 +422,7 @@ export function EstadoCuentaClinicaV2() {
                   Total Facturado
                 </p>
                 <p className={`text-3xl font-bold mt-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  ${totalFacturado.toLocaleString()}
+                  S/ {totalFacturado.toLocaleString()}
                 </p>
                 <p className={`text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
                   {facturasFiltradas.length} facturas
@@ -443,7 +443,7 @@ export function EstadoCuentaClinicaV2() {
                   Total Pagado
                 </p>
                 <p className={`text-3xl font-bold mt-2 ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
-                  ${totalPagado.toLocaleString()}
+                  S/ {totalPagado.toLocaleString()}
                 </p>
                 <p className={`text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
                   {totalFacturado > 0 ? Math.round((totalPagado / totalFacturado) * 100) : 0}% del total
@@ -464,7 +464,7 @@ export function EstadoCuentaClinicaV2() {
                   Saldo Pendiente
                 </p>
                 <p className={`text-3xl font-bold mt-2 ${darkMode ? 'text-red-400' : 'text-red-600'}`}>
-                  ${totalPendiente.toLocaleString()}
+                  S/ {totalPendiente.toLocaleString()}
                 </p>
                 <p className={`text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
                   Por cobrar
@@ -506,7 +506,7 @@ export function EstadoCuentaClinicaV2() {
                     <div className="flex justify-between items-center text-sm">
                       <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Facturado</span>
                       <span className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        ${sede.total.toLocaleString()}
+                        S/ {sede.total.toLocaleString()}
                       </span>
                     </div>
                     
@@ -520,14 +520,14 @@ export function EstadoCuentaClinicaV2() {
                     <div className="flex justify-between items-center text-sm">
                       <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Pagado</span>
                       <span className="font-bold text-green-500">
-                        ${sede.pagado.toLocaleString()}
+                        S/ {sede.pagado.toLocaleString()}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center text-sm">
                       <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Pendiente</span>
                       <span className="font-bold text-red-500">
-                        ${sede.pendiente.toLocaleString()}
+                        S/ {sede.pendiente.toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -555,7 +555,7 @@ export function EstadoCuentaClinicaV2() {
                       {facturasSeleccionadas.length} factura{facturasSeleccionadas.length !== 1 ? 's' : ''} seleccionada{facturasSeleccionadas.length !== 1 ? 's' : ''}
                     </p>
                     <p className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                      Total: ${totalSeleccionado.toLocaleString()}
+                      Total: S/ {totalSeleccionado.toLocaleString()}
                     </p>
                   </div>
 
@@ -709,7 +709,7 @@ export function EstadoCuentaClinicaV2() {
                           {factura.servicios.length} servicio{factura.servicios.length !== 1 ? 's' : ''}
                         </td>
                         <td className={`p-4 font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                          ${factura.total.toLocaleString()}
+                          S/ {factura.total.toLocaleString()}
                         </td>
                         <td className="p-4">
                           {factura.estado === 'pagada' ? (
@@ -830,7 +830,7 @@ export function EstadoCuentaClinicaV2() {
                           </div>
                         </div>
                         <p className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                          ${factura.total.toLocaleString()}
+                          S/ {factura.total.toLocaleString()}
                         </p>
                       </div>
                     ))}
@@ -844,7 +844,7 @@ export function EstadoCuentaClinicaV2() {
                       Total a Pagar
                     </p>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
-                      ${totalSeleccionado.toLocaleString()}
+                      S/ {totalSeleccionado.toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -912,7 +912,7 @@ export function EstadoCuentaClinicaV2() {
                     className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-6 text-lg font-bold"
                   >
                     <CheckCircle className="w-5 h-5 mr-2" />
-                    Confirmar Pago de ${totalSeleccionado.toLocaleString()}
+                    Confirmar Pago de S/ {totalSeleccionado.toLocaleString()}
                   </Button>
                   <Button
                     variant="outline"

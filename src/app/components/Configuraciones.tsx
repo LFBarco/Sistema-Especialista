@@ -10,6 +10,7 @@ import { Badge } from './ui/badge';
 import { Textarea } from './ui/textarea';
 import { Switch } from './ui/switch';
 import { ConfiguracionAgenda } from './ConfiguracionAgenda';
+import { ThemePicker } from './ThemePicker';
 import { toast } from 'sonner';
 import { systemAPI } from '../utils/api';
 
@@ -124,7 +125,7 @@ export function Configuraciones() {
     { id: 2, nombre: 'Antirrábica', descripcion: 'Vacuna contra la rabia', activo: true, metadata: { especie: 'Ambos', frecuencia: '1 año' } },
     { id: 3, nombre: 'Triple Felina', descripcion: 'Protección contra 3 enfermedades felinas', activo: true, metadata: { especie: 'Felino', frecuencia: '1 año' } },
     { id: 4, nombre: 'Leucemia Felina (FeLV)', descripcion: 'Protección contra leucemia felina', activo: true, metadata: { especie: 'Felino', frecuencia: '1 año' } },
-    { id: 5, nombre: 'Bordetella', descripción: 'Protección contra tos de las perreras', activo: true, metadata: { especie: 'Canino', frecuencia: '6 meses' } },
+    { id: 5, nombre: 'Bordetella', descripcion: 'Protección contra tos de las perreras', activo: true, metadata: { especie: 'Canino', frecuencia: '6 meses' } },
     { id: 6, nombre: 'Leptospirosis', descripcion: 'Protección contra leptospira', activo: true, metadata: { especie: 'Canino', frecuencia: '1 año' } }
   ]);
 
@@ -279,6 +280,27 @@ export function Configuraciones() {
     }
   };
 
+  const [asignandoDatos, setAsignandoDatos] = useState(false);
+
+  const handleAsignarDatosAntiguos = async () => {
+    if (!window.confirm('Los registros antiguos sin dueño (clínicas, servicios, facturas, gastos, etc.) pasarán a ser tuyos y dejarán de verse en las cuentas de otros especialistas.\n\n¿Continuar?')) return;
+    setAsignandoDatos(true);
+    try {
+      const resultado = await systemAPI.asignarDatosAntiguos();
+      const total = resultado?.total ?? 0;
+      toast.success(total > 0
+        ? `Se asignaron ${total} registros a tu cuenta`
+        : 'No había registros antiguos sin dueño');
+    } catch (error) {
+      console.error(error);
+      toast.error(String(error).includes('403')
+        ? 'Solo un administrador puede hacer esta acción'
+        : 'No se pudieron asignar los registros');
+    } finally {
+      setAsignandoDatos(false);
+    }
+  };
+
   const handleResetData = async () => {
     if (window.confirm('¡ADVERTENCIA DE SEGURIDAD!\n\nEsta acción eliminará TODOS los datos de la base de datos:\n- Pacientes\n- Citas\n- Facturas\n- Usuarios\n- Configuración\n\n¿Estás absolutamente seguro de que deseas continuar?')) {
       if (window.confirm('ÚLTIMA ADVERTENCIA: Esta acción es irreversible y dejará el sistema en blanco.\n\nPresiona Aceptar para borrar todo.')) {
@@ -291,7 +313,9 @@ export function Configuraciones() {
         } catch (error) {
           toast.dismiss();
           console.error(error);
-          toast.error('Error al resetear el sistema');
+          toast.error(String(error).includes('403')
+            ? 'Solo un administrador puede resetear el sistema'
+            : 'Error al resetear el sistema');
         }
       }
     }
@@ -314,7 +338,7 @@ export function Configuraciones() {
           </div>
           <Button
             onClick={() => setAgregando(categoria)}
-            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+            className="bg-brand hover:bg-brand-hover text-white"
           >
             <Plus className="w-4 h-4 mr-2" />
             Agregar
@@ -397,7 +421,7 @@ export function Configuraciones() {
                       )}
                       {config.campos?.includes('precio') && (
                         <div className="relative">
-                          <span className="absolute left-3 top-2.5 text-gray-500 text-xs">$</span>
+                          <span className="absolute left-3 top-2.5 text-gray-500 text-xs">S/</span>
                           <Input
                             type="number"
                             value={item.metadata?.precio || ''}
@@ -463,7 +487,7 @@ export function Configuraciones() {
                       )}
                       {item.metadata?.precio !== undefined && (
                         <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'} mt-1`}>
-                          💰 ${item.metadata.precio.toLocaleString()}
+                          💰 S/ {item.metadata.precio.toLocaleString()}
                         </p>
                       )}
                     </div>
@@ -647,7 +671,7 @@ export function Configuraciones() {
                     <div>
                       <Label>Precio Base</Label>
                       <div className="relative mt-1">
-                        <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                        <span className="absolute left-3 top-2.5 text-gray-500">S/</span>
                         <Input
                           type="number"
                           value={nuevoItem.metadata?.precio || ''}
@@ -716,15 +740,19 @@ export function Configuraciones() {
         {/* Header */}
         <div>
           <h1 className={`text-3xl ${darkMode ? 'text-white' : 'text-gray-900'} flex items-center gap-3`}>
-            <div className="bg-gradient-to-br from-purple-500 to-pink-600 text-white p-3 rounded-xl">
+            <div className="brand-mark text-white p-3 rounded-xl">
               <Settings className="w-8 h-8" />
             </div>
-            Configuraciones del Sistema
+            Configuración
           </h1>
           <p className={`${darkMode ? 'text-gray-400' : 'text-gray-600'} mt-2`}>
-            Personaliza y configura todos los catálogos del sistema
+            Apariencia, agenda y catálogos del portal especialista
           </p>
         </div>
+
+        <Card className={`p-5 sm:p-6 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'}`}>
+          <ThemePicker variant="full" />
+        </Card>
 
         {/* Tabs */}
         <Tabs value={tabActual} onValueChange={setTabActual} className="w-full">
@@ -790,7 +818,22 @@ export function Configuraciones() {
           </TabsContent>
 
           {/* TAB SISTEMA */}
-          <TabsContent value="sistema" className="mt-6">
+          <TabsContent value="sistema" className="mt-6 space-y-6">
+            <Card className={`p-6 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'}`}>
+              <h3 className={`text-lg font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Asignar datos antiguos a mi cuenta</h3>
+              <p className={`mt-1 mb-4 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                Los registros creados antes de separar los datos por especialista no tienen dueño y los ven todas las cuentas.
+                Úsalo una sola vez, antes de invitar a otros especialistas. Solo disponible para administradores.
+              </p>
+              <Button
+                onClick={handleAsignarDatosAntiguos}
+                disabled={asignandoDatos}
+                className="w-full sm:w-auto"
+              >
+                {asignandoDatos ? 'Asignando...' : 'Asignar datos antiguos'}
+              </Button>
+            </Card>
+
             <Card className={`p-6 border-red-200 ${darkMode ? 'bg-red-900/10 border-red-900' : 'bg-red-50'}`}>
               <div className="flex items-start gap-4">
                 <div className={`p-3 rounded-full ${darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-600'}`}>

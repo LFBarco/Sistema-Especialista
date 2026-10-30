@@ -342,8 +342,8 @@ export function RegistroEspecialistaWizard({ onRegisterComplete, onBackToSelecto
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <InputField label="Años de experiencia" value={anosExperiencia} onChange={setAnosExperiencia} type="number" placeholder="8" icon={Clock} required={false} c={c} />
-                  <InputField label="Tarifa consulta (USD)" value={tarifaConsulta} onChange={setTarifaConsulta} type="number" placeholder="250" icon={DollarSign} required={false} c={c} />
-                  <InputField label="Tarifa cirugía (USD)" value={tarifaCirugia} onChange={setTarifaCirugia} type="number" placeholder="600" icon={DollarSign} required={false} c={c} />
+                  <InputField label="Tarifa consulta (S/)" value={tarifaConsulta} onChange={setTarifaConsulta} type="number" placeholder="250" icon={DollarSign} required={false} c={c} />
+                  <InputField label="Tarifa cirugía (S/)" value={tarifaCirugia} onChange={setTarifaCirugia} type="number" placeholder="600" icon={DollarSign} required={false} c={c} />
                 </div>
                 <div>
                   <label className="text-xs font-semibold uppercase tracking-wide mb-2 block" style={{ color: c.textMuted }}>

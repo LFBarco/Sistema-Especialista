@@ -16,8 +16,9 @@ import { ClinicaFilter, getClinicaColor, getClinicaBorderColor, getClinicaBgColo
 import { motion, AnimatePresence } from 'motion/react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { PanelDetalleCita } from './PanelDetalleCita';
-import { CalendarioDragDrop } from './CalendarioDragDrop';
+import { AgendaCalendarioPro, type ModoMover } from './AgendaCalendarioPro';
 import { configuracionAgendaAPI } from '../utils/api';
+import { empujarServicioAGoogle, leerToken } from '../utils/googleCalendar';
 import { toast } from 'sonner';
 
 export function Agenda() {
@@ -27,6 +28,7 @@ export function Agenda() {
   const [mostrarModal, setMostrarModal] = useState(false);
   const [citaSeleccionadaId, setCitaSeleccionadaId] = useState<number | null>(null); // Changed to ID only
   const [incluirCanceladas, setIncluirCanceladas] = useState(false);
+  const [modoMover, setModoMover] = useState<ModoMover>('arrastrar');
   
   // Derived state for the selected appointment to ensure sync with global state
   const citaSeleccionada = servicios.find(s => s.id === citaSeleccionadaId) || null;
@@ -99,6 +101,18 @@ export function Agenda() {
     try {
       await actualizarServicio(citaId, { fecha: nuevaFecha, hora: nuevaHora });
       toast.success('Cita reprogramada correctamente');
+      const cita = servicios.find((s) => s.id === citaId);
+      if (cita && leerToken()) {
+        empujarServicioAGoogle({ ...cita, fecha: nuevaFecha, hora: nuevaHora })
+          .then((googleEventId) => {
+            if (googleEventId && googleEventId !== cita.googleEventId) {
+              return actualizarServicio(citaId, { googleEventId });
+            }
+          })
+          .catch(() => {
+            /* sync opcional — no bloquea la agenda */
+          });
+      }
     } catch (error) {
       console.error('Error al mover cita:', error);
       toast.error('No se pudo guardar el cambio');
@@ -472,7 +486,7 @@ export function Agenda() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setVistaActual('semana')}
-                className={`gap-2 ${vistaActual === 'semana' ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700' : darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+                className={`gap-2 ${vistaActual === 'semana' ? 'bg-orange-500 text-white hover:bg-orange-600' : darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
               >
                 <CalendarIcon className="w-4 h-4" />
                 Semana
@@ -482,12 +496,23 @@ export function Agenda() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setVistaActual('dia')}
-                className={`gap-2 ${vistaActual === 'dia' ? darkMode ? 'bg-gray-700' : 'bg-gray-100' : ''} ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+                className={`gap-2 ${vistaActual === 'dia' ? 'bg-orange-500 text-white hover:bg-orange-600' : darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
               >
                 <CalendarIcon className="w-4 h-4" />
                 Día
               </Button>
             </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navegarA('google-calendar')}
+              className={`gap-2 ${darkMode ? 'border-gray-600 text-gray-300' : ''}`}
+              title="Sincronizar con Google Calendar"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span className="hidden sm:inline">Google Calendar</span>
+            </Button>
 
             {/* Barra de Búsqueda */}
             <div className="flex-1 relative max-w-xl min-w-[200px]">
@@ -531,11 +556,11 @@ export function Agenda() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setMostrarSincronizacion(true)}
+                onClick={() => navegarA('google-calendar')}
                 className={darkMode ? 'bg-gray-800 border-gray-700 text-white hover:bg-gray-700' : ''}
               >
                 <RefreshCw className="w-4 h-4 mr-2" />
-                Sincronizar
+                {leerToken() ? 'Google · conectado' : 'Sincronizar Google'}
               </Button>
               <Button
                 variant="outline"
@@ -549,7 +574,7 @@ export function Agenda() {
               <Button
                 size="sm"
                 onClick={() => abrirModal()}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                className="bg-orange-500 hover:bg-orange-600 text-white"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Nueva Cita
@@ -655,81 +680,56 @@ export function Agenda() {
               </Card>
             </TabsContent>
 
-            {/* VISTA SEMANA */}
+            {/* VISTA SEMANA — calendario pro */}
             <TabsContent value="semana" className="mt-4">
-              <Card className={`p-4 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} overflow-x-auto`}>
-                <div className="min-w-[800px]">
-                  <CalendarioDragDrop 
-                    citasCalendario={servicios.filter(s => {
-                      // Filter by clinic if needed
-                      if (selectedClinica !== 'todas') {
-                         const clinica = getClinicaByNombre(s.clinica);
-                         if (clinica?.id !== selectedClinica) return false;
-                      }
-                      if (!incluirCanceladas && s.estado === 'cancelado') return false;
-                      return true;
-                    }).map(s => ({...s, color: getColorTipoCita(s.tipo)}))}
-                    onCitaMovida={handleCitaMovida}
-                    darkMode={darkMode}
-                    fechaInicio={(() => {
-                        const d = new Date(fechaActual);
-                        const day = d.getDay();
-                        const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
-                        return new Date(d.setDate(diff));
-                    })()}
-                    config={configAgenda}
-                  />
-                </div>
-              </Card>
+              <AgendaCalendarioPro
+                coloresClinica={Object.fromEntries(userClinicas.map((c) => [c.nombre, c.color]))}
+                citas={servicios.filter(s => {
+                  if (selectedClinica !== 'todas') {
+                    const clinica = getClinicaByNombre(s.clinica);
+                    if (clinica?.id !== selectedClinica) return false;
+                  }
+                  if (!incluirCanceladas && s.estado === 'cancelado') return false;
+                  if (searchQuery) {
+                    const q = searchQuery.toLowerCase();
+                    if (![s.paciente, s.tipo, s.clinica].some(x => x?.toLowerCase().includes(q))) return false;
+                  }
+                  return true;
+                })}
+                darkMode={darkMode}
+                fechaReferencia={fechaActual}
+                modoVista="semana"
+                modoMover={modoMover}
+                onModoMoverChange={setModoMover}
+                onCitaMovida={handleCitaMovida}
+                onCitaClick={seleccionarCita}
+                onSlotVacio={(fecha, hora) => abrirModal(new Date(fecha + 'T12:00:00'), hora)}
+                diasLaborales={configAgenda.diasLaborales}
+              />
             </TabsContent>
 
-            {/* VISTA DÍA */}
+            {/* VISTA DÍA — mismo motor pro */}
             <TabsContent value="dia" className="mt-4">
-              <Card className={`p-6 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'}`}>
-                <div className="space-y-2">
-                  {horarios.map(hora => {
-                    const citasEnHorario = getCitasEnHorario(fechaActual, hora);
-                    return (
-                      <div key={hora} className="grid grid-cols-12 gap-4">
-                        <div className={`col-span-2 text-right p-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                          {hora}
-                        </div>
-                        <div
-                          className={`col-span-10 min-h-[80px] p-3 rounded border ${darkMode ? 'bg-gray-900 border-gray-700 hover:bg-gray-800' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'} cursor-pointer transition-colors`}
-                          onClick={() => abrirModal(fechaActual, hora)}
-                        >
-                          {citasEnHorario.length === 0 ? (
-                            <div className={`text-sm ${darkMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                              Haz clic para agregar cita
-                            </div>
-                          ) : (
-                            <div className="space-y-2">
-                              {citasEnHorario.map((cita, index) => (
-                                <div
-                                  key={index}
-                                  className={`p-3 rounded-lg ${getColorTipoCita(cita.tipo)} text-white cursor-pointer hover:opacity-90`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    seleccionarCita(cita);
-                                  }}
-                                >
-                                  <div className="flex items-center justify-between mb-2">
-                                    <div className="font-bold">{cita.paciente}</div>
-                                    <div className="text-xs opacity-80">{cita.hora} ({cita.duracion || 60} min)</div>
-                                  </div>
-                                  <div className="text-sm mb-1">{cita.tipo}</div>
-                                  <div className="text-xs opacity-80">{cita.especie}</div>
-                                  <div className="text-xs opacity-80">{cita.clinica}</div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </Card>
+              <AgendaCalendarioPro
+                coloresClinica={Object.fromEntries(userClinicas.map((c) => [c.nombre, c.color]))}
+                citas={servicios.filter(s => {
+                  if (selectedClinica !== 'todas') {
+                    const clinica = getClinicaByNombre(s.clinica);
+                    if (clinica?.id !== selectedClinica) return false;
+                  }
+                  if (!incluirCanceladas && s.estado === 'cancelado') return false;
+                  return true;
+                })}
+                darkMode={darkMode}
+                fechaReferencia={fechaActual}
+                modoVista="dia"
+                modoMover={modoMover}
+                onModoMoverChange={setModoMover}
+                onCitaMovida={handleCitaMovida}
+                onCitaClick={seleccionarCita}
+                onSlotVacio={(fecha, hora) => abrirModal(new Date(fecha + 'T12:00:00'), hora)}
+                diasLaborales={configAgenda.diasLaborales}
+              />
             </TabsContent>
 
             {/* VISTA AGENDA (LISTA) */}
@@ -797,7 +797,7 @@ export function Agenda() {
                               </div>
                             </div>
                             <div className={`text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                              ${cita.tarifa}
+                              S/ {cita.tarifa}
                             </div>
                           </div>
                         </div>

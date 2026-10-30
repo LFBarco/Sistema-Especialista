@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FileText, Download, Send, Eye, Plus, Printer, Settings, Mail, CheckCircle, Building2, User, Calendar, DollarSign, X, Shield, Zap, FileCheck, Clock } from 'lucide-react';
 import { useApp } from '../App';
 import { Card } from './ui/card';
@@ -12,6 +12,7 @@ import { ClinicaFilter, getClinicaColor } from './ClinicaFilter';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
+import { configuracionFiscalAPI } from '../utils/api';
 
 interface ConfiguracionFiscal {
   nombreEmpresa: string;
@@ -36,8 +37,17 @@ interface ConfiguracionFiscal {
 
 type EstadoFactura = 'borrador' | 'pre-factura' | 'enviada' | 'factura-electronica' | 'timbrada' | 'pagada' | 'vencida';
 
+const esFacturaElectronica = (factura: any) =>
+  factura?.estado === 'factura-electronica' || factura?.estado === 'timbrada' || factura?.tipo === 'electronica';
+
+// Campos que no se guardan en la base de datos.
+const CAMPOS_FISCALES_SENSIBLES: (keyof ConfiguracionFiscal)[] = ['certificadoDigital', 'clavePrivada'];
+
 export function FacturacionElectronica() {
-  const { servicios, facturas, generarFactura, userClinicas, getClinicaByNombre, darkMode, usuarioActual } = useApp();
+  const { servicios, facturas, generarFactura, userClinicas, getClinicaByNombre, darkMode, usuarioActual, especialistas } = useApp();
+  const especialidadEmisor = especialistas.find(
+    e => !!usuarioActual?.email && e.email?.toLowerCase() === usuarioActual.email.toLowerCase()
+  )?.especialidad || 'Especialista Veterinario';
   const [selectedClinica, setSelectedClinica] = useState('todas');
   const [mostrarNuevaFactura, setMostrarNuevaFactura] = useState(false);
   const [tipoFactura, setTipoFactura] = useState<'pre-factura' | 'electronica'>('pre-factura');
@@ -61,7 +71,6 @@ export function FacturacionElectronica() {
     toast.success('Factura generada y vinculada correctamente');
   };
 
-  // Configuración fiscal (se carga desde la base de datos al guardar)
   const [configuracionFiscal, setConfiguracionFiscal] = useState<ConfiguracionFiscal>({
     nombreEmpresa: usuarioActual?.nombre || '',
     nif: '',
@@ -81,6 +90,33 @@ export function FacturacionElectronica() {
     certificadoDigital: '',
     clavePrivada: ''
   });
+  const [guardandoConfig, setGuardandoConfig] = useState(false);
+
+  useEffect(() => {
+    let activo = true;
+    configuracionFiscalAPI.get().then((guardada: any) => {
+      if (!activo || !guardada || typeof guardada !== 'object' || Array.isArray(guardada)) return;
+      const { userId: _userId, ...datos } = guardada;
+      setConfiguracionFiscal(prev => ({ ...prev, ...datos }));
+    });
+    return () => { activo = false; };
+  }, []);
+
+  const guardarConfiguracionFiscal = async (onExito: () => void) => {
+    setGuardandoConfig(true);
+    try {
+      const datos: Partial<ConfiguracionFiscal> = { ...configuracionFiscal };
+      CAMPOS_FISCALES_SENSIBLES.forEach(campo => delete datos[campo]);
+      await configuracionFiscalAPI.update(datos);
+      toast.success('Configuración guardada correctamente');
+      onExito();
+    } catch (error) {
+      console.error('Error guardando configuración fiscal:', error);
+      toast.error('No se pudo guardar la configuración. Intenta de nuevo.');
+    } finally {
+      setGuardandoConfig(false);
+    }
+  };
 
   const [emailData, setEmailData] = useState({
     destinatario: '',
@@ -164,7 +200,7 @@ export function FacturacionElectronica() {
     doc.setFontSize(60);
     doc.setFont('helvetica', 'bold');
     doc.saveGraphicsState();
-    doc.setGState(new doc.GState({ opacity: 0.1 }));
+    doc.setGState(new (doc as any).GState({ opacity: 0.1 }));
     doc.text('PRE-FACTURA', 105, 150, { 
       align: 'center',
       angle: 45
@@ -182,7 +218,7 @@ export function FacturacionElectronica() {
     
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text('Cardiología Veterinaria Especializada', 15, 28);
+    doc.text(especialidadEmisor, 15, 28);
 
     // Información de la pre-factura (derecha)
     doc.setTextColor(255, 255, 255);
@@ -207,7 +243,7 @@ export function FacturacionElectronica() {
     y += 4;
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(textGray);
-    doc.text(`NIF: ${configuracionFiscal.nif}`, 15, y);
+    doc.text(`RUC: ${configuracionFiscal.nif}`, 15, y);
     y += 4;
     doc.text(configuracionFiscal.direccionFiscal, 15, y);
     y += 4;
@@ -265,8 +301,8 @@ export function FacturacionElectronica() {
     factura.servicios?.forEach((servicio: any) => {
       doc.text(servicio.descripcion || 'Servicio', 20, y, { maxWidth: 100 });
       doc.text(servicio.cantidad?.toString() || '1', 133, y);
-      doc.text(`$${(servicio.precioUnitario || 0).toLocaleString()}`, 150, y);
-      doc.text(`$${((servicio.cantidad || 1) * (servicio.precioUnitario || 0)).toLocaleString()}`, 175, y);
+      doc.text(`S/ ${(servicio.precioUnitario || 0).toLocaleString()}`, 150, y);
+      doc.text(`S/ ${((servicio.cantidad || 1) * (servicio.precioUnitario || 0)).toLocaleString()}`, 175, y);
       y += 8;
     });
 
@@ -280,11 +316,11 @@ export function FacturacionElectronica() {
     doc.setTextColor(textGray);
     doc.setFontSize(10);
     doc.text('Subtotal:', 150, y);
-    doc.text(`$${(factura.subtotal || 0).toLocaleString()}`, 180, y, { align: 'right' });
+    doc.text(`S/ ${(factura.subtotal || 0).toLocaleString()}`, 180, y, { align: 'right' });
     
     y += 6;
     doc.text('Impuestos:', 150, y);
-    doc.text(`$${(factura.impuestos || 0).toLocaleString()}`, 180, y, { align: 'right' });
+    doc.text(`S/ ${(factura.impuestos || 0).toLocaleString()}`, 180, y, { align: 'right' });
     
     y += 10;
     doc.setFillColor(147, 51, 234);
@@ -293,7 +329,7 @@ export function FacturacionElectronica() {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
     doc.text('TOTAL:', 150, y + 2);
-    doc.text(`$${factura.total.toLocaleString()}`, 185, y + 2, { align: 'right' });
+    doc.text(`S/ ${factura.total.toLocaleString()}`, 185, y + 2, { align: 'right' });
 
     // Nota de pre-factura
     y += 20;
@@ -339,7 +375,7 @@ export function FacturacionElectronica() {
     
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text('Cardiología Veterinaria Especializada', 15, 28);
+    doc.text(especialidadEmisor, 15, 28);
     
     // Sello de factura electrónica
     doc.setFillColor(255, 255, 255);
@@ -368,7 +404,7 @@ export function FacturacionElectronica() {
     y += 4;
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(textGray);
-    doc.text(`NIF: ${configuracionFiscal.nif}`, 15, y);
+    doc.text(`RUC: ${configuracionFiscal.nif}`, 15, y);
     y += 4;
     doc.text(configuracionFiscal.direccionFiscal, 15, y);
     y += 4;
@@ -431,8 +467,8 @@ export function FacturacionElectronica() {
     factura.servicios?.forEach((servicio: any) => {
       doc.text(servicio.descripcion || 'Servicio', 20, y, { maxWidth: 100 });
       doc.text(servicio.cantidad?.toString() || '1', 133, y);
-      doc.text(`$${(servicio.precioUnitario || 0).toLocaleString()}`, 150, y);
-      doc.text(`$${((servicio.cantidad || 1) * (servicio.precioUnitario || 0)).toLocaleString()}`, 175, y);
+      doc.text(`S/ ${(servicio.precioUnitario || 0).toLocaleString()}`, 150, y);
+      doc.text(`S/ ${((servicio.cantidad || 1) * (servicio.precioUnitario || 0)).toLocaleString()}`, 175, y);
       y += 8;
     });
 
@@ -446,11 +482,11 @@ export function FacturacionElectronica() {
     doc.setTextColor(textGray);
     doc.setFontSize(10);
     doc.text('Subtotal:', 150, y);
-    doc.text(`$${(factura.subtotal || 0).toLocaleString()}`, 180, y, { align: 'right' });
+    doc.text(`S/ ${(factura.subtotal || 0).toLocaleString()}`, 180, y, { align: 'right' });
     
     y += 6;
-    doc.text('Impuestos (IVA 19%):', 150, y);
-    doc.text(`$${(factura.impuestos || 0).toLocaleString()}`, 180, y, { align: 'right' });
+    doc.text('Impuestos:', 150, y);
+    doc.text(`S/ ${(factura.impuestos || 0).toLocaleString()}`, 180, y, { align: 'right' });
     
     y += 10;
     doc.setFillColor(6, 182, 212);
@@ -459,7 +495,7 @@ export function FacturacionElectronica() {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
     doc.text('TOTAL:', 150, y + 2);
-    doc.text(`$${factura.total.toLocaleString()}`, 185, y + 2, { align: 'right' });
+    doc.text(`S/ ${factura.total.toLocaleString()}`, 185, y + 2, { align: 'right' });
 
     // Código QR simulado (representación visual)
     y += 25;
@@ -515,22 +551,13 @@ export function FacturacionElectronica() {
     });
   };
 
-  // Función para emitir factura electrónica (simulada)
-  const emitirFacturaElectronica = (factura: any) => {
-    if (!configuracionFiscal.facturaElectronicaHabilitada) {
-      toast.error('La facturación electrónica no está habilitada. Configure primero su proveedor.');
-      return;
-    }
-
-    // Simulación de emisión a proveedor de facturación
-    toast.loading('Conectando con ' + configuracionFiscal.proveedorFacturacion + '...', { duration: 1500 });
-    
-    setTimeout(() => {
-      toast.success(`¡Factura emitida exitosamente!`, {
-        description: `UUID: ${generateUUID()}`
-      });
-      generarFacturaElectronicaPDF(factura);
-    }, 1500);
+  // La emisión ante SUNAT no está conectada: el comprobante válido (recibo por honorarios)
+  // se emite en SUNAT Operaciones en Línea y la pre-factura sirve de detalle para la clínica.
+  const emitirFacturaElectronica = (_factura: any) => {
+    toast.info('La emisión ante SUNAT aún no está conectada', {
+      description: 'Emite tu recibo por honorarios en SUNAT Operaciones en Línea y envíalo a la clínica junto con la pre-factura.',
+      duration: 9000,
+    });
   };
 
   // Función para abrir modal de email
@@ -540,14 +567,23 @@ export function FacturacionElectronica() {
     setEmailData({
       destinatario: clinica?.email || '',
       asunto: `Factura ${factura.numero} - ${configuracionFiscal.nombreEmpresa}`,
-      mensaje: `Estimado/a,\n\nAdjunto encontrará la factura ${factura.numero} correspondiente a los servicios veterinarios prestados.\n\nDetalles de la factura:\n- Fecha: ${new Date(factura.fecha).toLocaleDateString('es-ES')}\n- Total: $${factura.total.toLocaleString()}\n- Vencimiento: ${new Date(factura.vencimiento).toLocaleDateString('es-ES')}\n\nQuedo atento a cualquier consulta.\n\nSaludos cordiales,\n${configuracionFiscal.nombreEmpresa}`
+      mensaje: `Estimado/a,\n\nAdjunto encontrará la factura ${factura.numero} correspondiente a los servicios veterinarios prestados.\n\nDetalles de la factura:\n- Fecha: ${new Date(factura.fecha).toLocaleDateString('es-ES')}\n- Total: S/ ${factura.total.toLocaleString()}\n- Vencimiento: ${new Date(factura.vencimiento).toLocaleDateString('es-ES')}\n\nQuedo atento a cualquier consulta.\n\nSaludos cordiales,\n${configuracionFiscal.nombreEmpresa}`
     });
     setMostrarModalEmail(true);
   };
 
-  // Función para enviar email (simulada)
+  // Abre el cliente de correo del usuario con el mensaje listo; el PDF se adjunta a mano.
   const enviarEmail = () => {
-    toast.success(`Factura ${facturaSeleccionada?.numero} enviada a ${emailData.destinatario}`);
+    if (!emailData.destinatario) {
+      toast.error('Ingresa el correo del destinatario');
+      return;
+    }
+    const enlace = `mailto:${encodeURIComponent(emailData.destinatario)}` +
+      `?subject=${encodeURIComponent(emailData.asunto)}&body=${encodeURIComponent(emailData.mensaje)}`;
+    window.location.href = enlace;
+    toast.info('Se abrió tu correo con el mensaje listo', {
+      description: 'Adjunta el PDF de la factura antes de enviarlo.'
+    });
     setMostrarModalEmail(false);
     setFacturaSeleccionada(null);
   };
@@ -563,18 +599,19 @@ export function FacturacionElectronica() {
               <div 
                 className="p-3 rounded-xl"
                 style={{
-                  background: 'linear-gradient(135deg, #06B6D4 0%, #0891B2 100%)',
-                  boxShadow: '0 4px 12px -2px rgba(6, 182, 212, 0.4)'
+                  background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
+                  boxShadow: '0 4px 12px -2px rgba(249, 115, 22, 0.35)'
                 }}
               >
                 <FileText className="w-8 h-8 text-white" />
               </div>
-              Facturación Electrónica
+              Honorarios
             </h1>
             <p className={`${darkMode ? 'text-gray-400' : 'text-gray-600'} mt-2`}>
-              {configuracionFiscal.facturaElectronicaHabilitada 
-                ? `✓ Facturación electrónica habilitada vía ${configuracionFiscal.proveedorFacturacion}` 
-                : 'Genera pre-facturas o configura facturación electrónica'}
+              Pre-facturas y recibos para clínicas. La venta al cliente final la registra la clínica en Veterinari.
+              {configuracionFiscal.facturaElectronicaHabilitada
+                ? ` · Electrónica vía ${configuracionFiscal.proveedorFacturacion}`
+                : ''}
             </p>
           </div>
 
@@ -597,43 +634,59 @@ export function FacturacionElectronica() {
             </Button>
             <Button
               onClick={() => setMostrarNuevaFactura(true)}
-              style={{ background: 'linear-gradient(135deg, #06B6D4 0%, #0891B2 100%)' }}
-              className="text-white"
+              className="bg-orange-500 hover:bg-orange-600 text-white"
             >
               <Plus className="w-4 h-4 mr-2" />
-              Nueva Factura
+              Nueva pre-factura
             </Button>
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className={`p-6 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'}`}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className={`p-5 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} ${serviciosPorFacturar.length ? 'ring-1 ring-orange-500/40' : ''}`}>
             <div className="flex items-center justify-between">
               <div>
-                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Total Facturado</p>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Por facturar</p>
                 <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  ${totalFacturado.toLocaleString()}
+                  {serviciosPorFacturar.length}
                 </p>
-                <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'} mt-1`}>
-                  {facturasFiltradas.length} facturas
+                <p className={`text-sm text-orange-500 mt-1`}>
+                  S/ {serviciosPorFacturar.reduce((a, s) => a + s.tarifa, 0).toLocaleString()}
                 </p>
               </div>
-              <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgba(6, 182, 212, 0.15)' }}>
-                <FileText className="w-6 h-6" style={{ color: '#06B6D4' }} />
+              <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgba(249, 115, 22, 0.15)' }}>
+                <Zap className="w-6 h-6" style={{ color: '#F97316' }} />
               </div>
             </div>
           </Card>
 
-          <Card className={`p-6 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'}`}>
+          <Card className={`p-5 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'}`}>
             <div className="flex items-center justify-between">
               <div>
-                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Total Cobrado</p>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Emitido</p>
                 <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  ${totalPagado.toLocaleString()}
+                  S/ {totalFacturado.toLocaleString()}
+                </p>
+                <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'} mt-1`}>
+                  {facturasFiltradas.length} documentos
+                </p>
+              </div>
+              <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgba(249, 115, 22, 0.12)' }}>
+                <FileText className="w-6 h-6" style={{ color: '#F97316' }} />
+              </div>
+            </div>
+          </Card>
+
+          <Card className={`p-5 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'}`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Cobrado</p>
+                <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                  S/ {totalPagado.toLocaleString()}
                 </p>
                 <p className={`text-sm text-green-500 mt-1`}>
-                  {totalFacturado > 0 ? Math.round((totalPagado / totalFacturado) * 100) : 0}% del total
+                  {totalFacturado > 0 ? Math.round((totalPagado / totalFacturado) * 100) : 0}% del emitido
                 </p>
               </div>
               <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)' }}>
@@ -642,15 +695,15 @@ export function FacturacionElectronica() {
             </div>
           </Card>
 
-          <Card className={`p-6 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'}`}>
+          <Card className={`p-5 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'}`}>
             <div className="flex items-center justify-between">
               <div>
-                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Pendiente de Cobro</p>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Por cobrar</p>
                 <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  ${totalPendiente.toLocaleString()}
+                  S/ {totalPendiente.toLocaleString()}
                 </p>
                 <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'} mt-1`}>
-                  {facturasFiltradas.filter(f => f.estado !== 'pagada').length} facturas
+                  {facturasFiltradas.filter(f => f.estado !== 'pagada').length} pendientes
                 </p>
               </div>
               <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgba(234, 179, 8, 0.15)' }}>
@@ -679,21 +732,21 @@ export function FacturacionElectronica() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <Card className={`p-6 border-l-4 border-l-blue-500 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'}`}>
-              <div className="flex items-center justify-between mb-4">
+            <Card className={`p-6 border-l-4 border-l-orange-500 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'}`}>
+              <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
                 <div>
                    <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} flex items-center gap-2`}>
-                     <FileCheck className="w-6 h-6 text-blue-500" />
-                     Pendientes de Facturar ({serviciosPorFacturar.length})
+                     <FileCheck className="w-6 h-6 text-orange-500" />
+                     Listos para honorario ({serviciosPorFacturar.length})
                    </h2>
                    <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
-                     Servicios completados listos para generar factura.
+                     Servicios completados — genera la pre-factura hacia la clínica.
                    </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-medium text-blue-500">Monto acumulado</p>
+                  <p className="text-sm font-medium text-orange-500">Monto acumulado</p>
                   <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                    ${serviciosPorFacturar.reduce((acc, s) => acc + s.tarifa, 0).toLocaleString()}
+                    S/ {serviciosPorFacturar.reduce((acc, s) => acc + s.tarifa, 0).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -723,7 +776,7 @@ export function FacturacionElectronica() {
                           <div className="text-xs opacity-70">{servicio.paciente} ({servicio.especie})</div>
                         </td>
                         <td className={`px-6 py-4 whitespace-nowrap text-sm text-right font-bold ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>
-                          ${servicio.tarifa.toLocaleString()}
+                          S/ {servicio.tarifa.toLocaleString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           <Button 
@@ -818,7 +871,7 @@ export function FacturacionElectronica() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <p className={`text-sm font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>
-                          ${factura.total.toLocaleString()}
+                          S/ {factura.total.toLocaleString()}
                         </p>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -840,7 +893,7 @@ export function FacturacionElectronica() {
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
-                          {factura.estado === 'pre-factura' && (
+                          {!esFacturaElectronica(factura) && (
                             <Button
                               size="sm"
                               variant="ghost"
@@ -851,7 +904,7 @@ export function FacturacionElectronica() {
                               <Download className="w-4 h-4" />
                             </Button>
                           )}
-                          {(factura.estado === 'factura-electronica' || factura.estado === 'timbrada') && (
+                          {esFacturaElectronica(factura) && (
                             <Button
                               size="sm"
                               variant="ghost"
@@ -868,7 +921,7 @@ export function FacturacionElectronica() {
                               variant="ghost"
                               onClick={() => emitirFacturaElectronica(factura)}
                               className={darkMode ? 'text-cyan-400 hover:bg-cyan-900/30' : 'text-cyan-600 hover:bg-cyan-50'}
-                              title="Emitir Factura Electrónica"
+                              title="Recibo por honorarios (SUNAT)"
                             >
                               <Zap className="w-4 h-4" />
                             </Button>
@@ -944,7 +997,7 @@ export function FacturacionElectronica() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
-                      NIF / RUT / RFC
+                      RUC
                     </Label>
                     <Input
                       value={configuracionFiscal.nif}
@@ -1101,10 +1154,8 @@ export function FacturacionElectronica() {
                   Cancelar
                 </Button>
                 <Button
-                  onClick={() => {
-                    toast.success('Configuración fiscal guardada correctamente');
-                    setMostrarConfig(false);
-                  }}
+                  disabled={guardandoConfig}
+                  onClick={() => guardarConfiguracionFiscal(() => setMostrarConfig(false))}
                   style={{ background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)' }}
                   className="text-white"
                 >
@@ -1181,10 +1232,10 @@ export function FacturacionElectronica() {
                       disabled={!configuracionFiscal.facturaElectronicaHabilitada}
                     >
                       <option value="Ninguno">Seleccione un proveedor</option>
+                      <option value="SUNAT">🇵🇪 SUNAT (Perú)</option>
                       <option value="DIAN">🇨🇴 DIAN (Colombia)</option>
                       <option value="SAT">🇲🇽 SAT (México)</option>
                       <option value="SRI">🇪🇨 SRI (Ecuador)</option>
-                      <option value="SUNAT">🇵🇪 SUNAT (Perú)</option>
                     </select>
                     <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'} mt-1`}>
                       Seleccione el organismo fiscal de su país
@@ -1290,10 +1341,8 @@ export function FacturacionElectronica() {
                     Cancelar
                   </Button>
                   <Button
-                    onClick={() => {
-                      toast.success('Configuración guardada correctamente');
-                      setMostrarConfigFactElec(false);
-                    }}
+                    disabled={guardandoConfig}
+                    onClick={() => guardarConfiguracionFiscal(() => setMostrarConfigFactElec(false))}
                     style={{ background: 'linear-gradient(135deg, #06B6D4 0%, #0891B2 100%)' }}
                     className="text-white"
                   >
@@ -1525,10 +1574,10 @@ export function FacturacionElectronica() {
                               {servicio.cantidad}
                             </td>
                             <td className={`px-4 py-3 text-sm text-right ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                              ${servicio.precioUnitario.toLocaleString()}
+                              S/ {servicio.precioUnitario.toLocaleString()}
                             </td>
                             <td className={`px-4 py-3 text-sm text-right font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                              ${(servicio.cantidad * servicio.precioUnitario).toLocaleString()}
+                              S/ {(servicio.cantidad * servicio.precioUnitario).toLocaleString()}
                             </td>
                           </tr>
                         ))}
@@ -1543,19 +1592,19 @@ export function FacturacionElectronica() {
                     <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
                       <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Subtotal</span>
                       <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        ${(facturaSeleccionada.subtotal || 0).toLocaleString()}
+                        S/ {(facturaSeleccionada.subtotal || 0).toLocaleString()}
                       </span>
                     </div>
                     <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
-                      <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>IVA (19%)</span>
+                      <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Impuestos</span>
                       <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        ${(facturaSeleccionada.impuestos || 0).toLocaleString()}
+                        S/ {(facturaSeleccionada.impuestos || 0).toLocaleString()}
                       </span>
                     </div>
                     <div className="flex justify-between py-3">
                       <span className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Total</span>
                       <span className={`text-lg font-bold text-blue-600`}>
-                        ${facturaSeleccionada.total.toLocaleString()}
+                        S/ {facturaSeleccionada.total.toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -1572,7 +1621,7 @@ export function FacturacionElectronica() {
                   Cerrar
                 </Button>
                 
-                {facturaSeleccionada.estado === 'pre-factura' && (
+                {!esFacturaElectronica(facturaSeleccionada) && (
                   <Button 
                     variant="outline"
                     onClick={() => generarPreFacturaPDF(facturaSeleccionada)}
@@ -1583,7 +1632,7 @@ export function FacturacionElectronica() {
                   </Button>
                 )}
 
-                {(facturaSeleccionada.estado === 'factura-electronica' || facturaSeleccionada.estado === 'timbrada') && (
+                {esFacturaElectronica(facturaSeleccionada) && (
                   <Button 
                     variant="outline"
                     onClick={() => generarFacturaElectronicaPDF(facturaSeleccionada)}

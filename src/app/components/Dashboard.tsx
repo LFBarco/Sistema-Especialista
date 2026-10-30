@@ -1,4 +1,4 @@
-import { DollarSign, Calendar, CheckCircle, Clock, TrendingUp, AlertCircle, Sparkles, ArrowUpRight, ArrowDownRight, Info, ShieldAlert, Award, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { DollarSign, Calendar, CheckCircle, Clock, TrendingUp, AlertCircle, Sparkles, ArrowUpRight, ArrowDownRight, Info, ShieldAlert, Award, ShieldCheck, AlertTriangle, RefreshCw, MapPin } from 'lucide-react';
 import { StatCard } from './StatCard';
 import { RecentActivity } from './RecentActivity';
 import { UpcomingAppointments } from './UpcomingAppointments';
@@ -10,10 +10,15 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { leerToken } from '../utils/googleCalendar';
 
 export function Dashboard() {
   const { solicitudes, servicios, facturas, gastos, darkMode, navegarA, userClinicas, getClinicaByNombre } = useApp();
   const [selectedClinica, setSelectedClinica] = useState('todas');
+  const googleConectado = !!leerToken();
+  const hoyStr = format(new Date(), 'yyyy-MM-dd');
   
   // Estado de verificación del especialista (simulado - vendría del contexto/Supabase)
   const [estadoVerificacion, setEstadoVerificacion] = useState<'draft' | 'pending' | 'partial' | 'verified'>('verified');
@@ -96,6 +101,11 @@ export function Dashboard() {
     return fecha.toDateString() === hoy.toDateString();
   }).length;
 
+  const citasHoy = serviciosFiltrados
+    .filter((s) => s.fecha === hoyStr && s.estado !== 'cancelado')
+    .sort((a, b) => (a.hora || '').localeCompare(b.hora || ''));
+  const porCompletarHoy = citasHoy.filter((s) => s.estado === 'confirmado').length;
+
   const stats = [
     {
       title: 'Solicitudes Pendientes',
@@ -121,7 +131,7 @@ export function Dashboard() {
     },
     {
       title: 'Ingresos del Mes',
-      value: `$${ingresosEsteMes.toLocaleString()}`,
+      value: `S/ ${ingresosEsteMes.toLocaleString()}`,
       change: `${cambioIngresos > 0 ? '+' : ''}${cambioIngresos}% vs mes anterior`,
       icon: DollarSign,
       color: '#F97316', // Orange (reemplaza azul)
@@ -132,7 +142,7 @@ export function Dashboard() {
     },
     {
       title: 'Cuentas por Cobrar',
-      value: `$${cuentasPorCobrar.toLocaleString()}`,
+      value: `S/ ${cuentasPorCobrar.toLocaleString()}`,
       change: `${facturasPendientes} factura${facturasPendientes !== 1 ? 's' : ''} pendiente${facturasPendientes !== 1 ? 's' : ''}`,
       icon: AlertCircle,
       color: '#EF4444', // Red
@@ -195,6 +205,82 @@ export function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* Mi día — centro de acción del especialista */}
+      <Card className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border`}>
+        <CardContent className="p-4 sm:p-5 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                Mi día · {format(new Date(), "EEEE d 'de' MMMM", { locale: es })}
+              </h2>
+              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                {citasHoy.length === 0
+                  ? 'Sin citas hoy — buen momento para revisar solicitudes'
+                  : `${citasHoy.length} cita${citasHoy.length === 1 ? '' : 's'} · ${porCompletarHoy} por completar`}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navegarA('agenda')}
+                className={darkMode ? 'border-gray-600 text-gray-200' : ''}
+              >
+                <Calendar className="w-4 h-4 mr-1.5" />
+                Abrir agenda
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navegarA('google-calendar')}
+                className={darkMode ? 'border-gray-600 text-gray-200' : ''}
+              >
+                <RefreshCw className={`w-4 h-4 mr-1.5 ${googleConectado ? 'text-green-500' : ''}`} />
+                {googleConectado ? 'Google OK' : 'Conectar Google'}
+              </Button>
+              {solicitudesPendientes > 0 && (
+                <Button size="sm" onClick={() => navegarA('solicitudes')} className="bg-orange-500 hover:bg-orange-600 text-white">
+                  {solicitudesPendientes} solicitud{solicitudesPendientes === 1 ? '' : 'es'}
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {citasHoy.length > 0 ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {citasHoy.slice(0, 6).map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => navegarA('agenda')}
+                  className={`text-left rounded-lg border px-3 py-2.5 transition hover:border-orange-500 ${
+                    darkMode ? 'border-gray-700 bg-gray-900/50' : 'border-gray-100 bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-semibold text-orange-500">{c.hora || '--:--'}</span>
+                    <Badge variant="outline" className="text-[10px] capitalize">
+                      {c.estado}
+                    </Badge>
+                  </div>
+                  <p className={`text-sm font-medium truncate mt-0.5 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {c.paciente} · {c.tipo}
+                  </p>
+                  <p className={`text-xs flex items-center gap-1 mt-0.5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    <MapPin className="w-3 h-3 shrink-0" />
+                    <span className="truncate">{c.clinica}</span>
+                  </p>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+              Acepta en Solicitudes → agenda → historia clínica → informe. La venta al cliente la registra la clínica.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* BANNER DE ESTADO DE VERIFICACIÓN */}
       {estadoVerificacion !== 'verified' && (

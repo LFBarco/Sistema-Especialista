@@ -1,15 +1,25 @@
 import { useState } from 'react';
-import { Search, Filter, Download, Eye, FileText, Calendar, MapPin, DollarSign } from 'lucide-react';
+import { Search, Filter, Download, Eye, FileText, Calendar, MapPin, DollarSign, CheckCircle2, ArrowRight, ClipboardList } from 'lucide-react';
 import { useApp } from '../App';
 import { ClinicaFilter, getClinicaColor } from './ClinicaFilter';
+import { BotonInformeServicio } from './integracion/BotonInformeServicio';
 import { toast } from 'sonner';
 
 export function Servicios() {
-  const { servicios, darkMode, userClinicas, getClinicaByNombre, navegarA } = useApp();
+  const {
+    servicios,
+    darkMode,
+    userClinicas,
+    getClinicaByNombre,
+    navegarA,
+    completarServicio,
+    generarFactura,
+  } = useApp();
   const [filtroEstado, setFiltroEstado] = useState<string>('todos');
   const [selectedClinica, setSelectedClinica] = useState('todas');
   const [busqueda, setBusqueda] = useState('');
   const [servicioDetalle, setServicioDetalle] = useState<any>(null);
+  const [accionId, setAccionId] = useState<number | null>(null);
 
   const estadoColors = {
     confirmado: { bg: darkMode ? 'bg-blue-900/50' : 'bg-blue-100', text: darkMode ? 'text-blue-400' : 'text-blue-600', border: darkMode ? 'border-blue-700' : 'border-blue-300', label: 'Confirmado' },
@@ -37,6 +47,18 @@ export function Servicios() {
     .reduce((acc, s) => acc + s.tarifa, 0);
   const totalServicios = serviciosFiltrados.length;
 
+  const porCompletar = servicios.filter(
+    (s) =>
+      s.estado === 'confirmado' &&
+      (selectedClinica === 'todas' || getClinicaByNombre(s.clinica)?.id === selectedClinica),
+  );
+  const porHonorario = servicios.filter(
+    (s) =>
+      s.estado === 'completado' &&
+      !s.facturaId &&
+      (selectedClinica === 'todas' || getClinicaByNombre(s.clinica)?.id === selectedClinica),
+  );
+
   const handleVerDetalle = (servicio: any) => {
     setServicioDetalle(servicio);
   };
@@ -44,15 +66,30 @@ export function Servicios() {
   const handleVerFactura = (facturaId: string) => {
     if (facturaId) {
       navegarA('facturacion', { facturaId });
-      toast.success('Navegando a la factura...');
     } else {
       toast.error('Este servicio no tiene factura asociada');
     }
   };
 
-  const handleIrAFacturar = () => {
-    navegarA('facturacion');
-    toast.success('Yendo a facturación para procesar cobro...');
+  const handleCompletar = async (id: number) => {
+    setAccionId(id);
+    try {
+      await completarServicio(id);
+    } finally {
+      setAccionId(null);
+    }
+  };
+
+  const handleGenerarHonorario = async (id: number) => {
+    setAccionId(id);
+    try {
+      await generarFactura(id);
+      toast.success('Honorario generado', {
+        action: { label: 'Ver', onClick: () => navegarA('facturacion') },
+      });
+    } finally {
+      setAccionId(null);
+    }
   };
 
   const handleExportar = () => {
@@ -60,7 +97,7 @@ export function Servicios() {
       const rows: string[] = [
         'Fecha,Hora,Clínica,Tipo de Servicio,Paciente,Especie,Estado,Tarifa,Factura',
         ...serviciosFiltrados.map(s =>
-          `${s.fecha},${s.hora || 'N/A'},${s.clinica},${s.tipo},${s.paciente},${s.especie},${s.estado},$${s.tarifa},${s.facturaId || 'N/A'}`
+          `${s.fecha},${s.hora || 'N/A'},${s.clinica},${s.tipo},${s.paciente},${s.especie},${s.estado},S/ ${s.tarifa},${s.facturaId || 'N/A'}`
         )
       ];
       const csvContent = rows.join('\n');
@@ -83,36 +120,106 @@ export function Servicios() {
   return (
     <div className="p-4 sm:p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className={`text-3xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Historial de Servicios</h1>
-          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Registro completo de todos tus servicios prestados</p>
+          <h1 className={`text-3xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Servicios</h1>
+          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            Flujo: confirmar → completar → informe → honorario
+          </p>
         </div>
         <button 
           onClick={handleExportar}
-          className="px-4 py-2 text-sm text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 rounded-lg transition-all flex items-center shadow-lg"
+          className="px-4 py-2 text-sm text-white bg-orange-500 hover:bg-orange-600 rounded-lg transition-all flex items-center"
         >
           <Download className="w-4 h-4 mr-2" />
-          Exportar a Excel
+          Exportar CSV
         </button>
       </div>
 
+      {/* Bandeja de acción */}
+      {(porCompletar.length > 0 || porHonorario.length > 0) && (
+        <div className={`rounded-xl border p-4 sm:p-5 ${darkMode ? 'bg-gray-800 border-orange-500/30' : 'bg-white border-orange-200'}`}>
+          <div className="flex items-center gap-2 mb-3">
+            <ClipboardList className="w-5 h-5 text-orange-500" />
+            <h2 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Bandeja de acción</h2>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3">
+            {porCompletar.slice(0, 4).map((s) => (
+              <div
+                key={`c-${s.id}`}
+                className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2.5 ${
+                  darkMode ? 'border-gray-700 bg-gray-900/40' : 'border-gray-100 bg-gray-50'
+                }`}
+              >
+                <div className="min-w-0">
+                  <p className={`text-sm font-medium truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {s.paciente} · {s.tipo}
+                  </p>
+                  <p className={`text-xs truncate ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {s.fecha} {s.hora} · {s.clinica}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={accionId === s.id}
+                  onClick={() => handleCompletar(s.id)}
+                  className="shrink-0 text-xs px-3 py-1.5 rounded-lg bg-green-500 hover:bg-green-600 text-white font-medium flex items-center gap-1 disabled:opacity-50"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Completar
+                </button>
+              </div>
+            ))}
+            {porHonorario.slice(0, 4).map((s) => (
+              <div
+                key={`h-${s.id}`}
+                className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2.5 ${
+                  darkMode ? 'border-gray-700 bg-gray-900/40' : 'border-gray-100 bg-gray-50'
+                }`}
+              >
+                <div className="min-w-0">
+                  <p className={`text-sm font-medium truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {s.paciente} · S/ {s.tarifa}
+                  </p>
+                  <p className={`text-xs truncate ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Completado · {s.clinica}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <BotonInformeServicio servicio={s} />
+                  <button
+                    type="button"
+                    disabled={accionId === s.id}
+                    onClick={() => handleGenerarHonorario(s.id)}
+                    className="text-xs px-3 py-1.5 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-medium flex items-center gap-1 disabled:opacity-50"
+                  >
+                    Honorario
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Stats Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className={`rounded-xl border p-6 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-          <p className={`text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Total Servicios</p>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className={`rounded-xl border p-5 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+          <p className={`text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Total</p>
           <p className={`text-3xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>{totalServicios}</p>
-          <p className={`text-sm mt-1 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>En el período seleccionado</p>
         </div>
-        <div className={`rounded-xl border p-6 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-          <p className={`text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Ingresos Totales</p>
-          <p className={`text-3xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>${totalIngresos.toLocaleString()}</p>
-          <p className={`text-sm mt-1 ${darkMode ? 'text-green-400' : 'text-green-600'}`}>Servicios pagados</p>
+        <div className={`rounded-xl border p-5 ${darkMode ? 'bg-gray-800 border-orange-500/30' : 'bg-white border-orange-100'}`}>
+          <p className={`text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Por completar</p>
+          <p className={`text-3xl font-bold text-orange-500`}>{porCompletar.length}</p>
         </div>
-        <div className={`rounded-xl border p-6 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-          <p className={`text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Tarifa Promedio</p>
-          <p className={`text-3xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>${totalServicios > 0 ? Math.round(totalIngresos / totalServicios) : 0}</p>
-          <p className={`text-sm mt-1 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>Por servicio</p>
+        <div className={`rounded-xl border p-5 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+          <p className={`text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Por honorario</p>
+          <p className={`text-3xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>{porHonorario.length}</p>
+        </div>
+        <div className={`rounded-xl border p-5 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+          <p className={`text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Cobrado</p>
+          <p className={`text-3xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>S/ {totalIngresos.toLocaleString()}</p>
         </div>
       </div>
 
@@ -215,7 +322,7 @@ export function Servicios() {
                         {new Date(servicio.fecha).toLocaleDateString('es-ES')}
                       </div>
                       <div className="flex items-center">
-                        <p className={`font-medium ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>${servicio.tarifa}</p>
+                        <p className={`font-medium ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>S/ {servicio.tarifa}</p>
                       </div>
                       <div className="col-span-2">
                         <p className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
@@ -229,19 +336,27 @@ export function Servicios() {
                     )}
                     
                     <div className="flex justify-end space-x-2 pt-2">
+                      {servicio.estado === 'confirmado' && (
+                        <button
+                          type="button"
+                          disabled={accionId === servicio.id}
+                          onClick={() => handleCompletar(servicio.id)}
+                          className="px-2.5 py-1.5 text-xs rounded-lg bg-green-500 hover:bg-green-600 text-white font-medium disabled:opacity-50"
+                        >
+                          Completar
+                        </button>
+                      )}
                       {!servicio.facturaId && servicio.estado === 'completado' && (
                          <button 
-                           onClick={handleIrAFacturar}
-                           className={`p-2 rounded-lg transition-colors ${
-                             darkMode 
-                              ? 'bg-green-500/10 hover:bg-green-500/20 text-green-400' 
-                              : 'bg-green-50 hover:bg-green-100 text-green-600'
-                           }`}
-                           title="Ir a Facturar"
+                           onClick={() => handleGenerarHonorario(servicio.id)}
+                           disabled={accionId === servicio.id}
+                           className="p-2 rounded-lg transition-colors bg-orange-500/15 hover:bg-orange-500/25 text-orange-500 disabled:opacity-50"
+                           title="Generar honorario"
                          >
                            <DollarSign className="w-4 h-4" />
                          </button>
                       )}
+                      <BotonInformeServicio servicio={servicio} />
                       <button 
                         onClick={() => handleVerDetalle(servicio)}
                         className={`p-2 rounded-lg transition-colors ${
@@ -333,25 +448,37 @@ export function Servicios() {
                           </span>
                         </td>
                         <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>
-                          ${servicio.tarifa.toLocaleString()}
+                          S/ {servicio.tarifa.toLocaleString()}
                         </td>
                         <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                           {servicio.facturaId || '-'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                          {servicio.estado === 'confirmado' && (
+                            <button
+                              type="button"
+                              disabled={accionId === servicio.id}
+                              onClick={() => handleCompletar(servicio.id)}
+                              className="px-2.5 py-1.5 text-xs rounded-lg bg-green-500 hover:bg-green-600 text-white font-medium disabled:opacity-50"
+                            >
+                              Completar
+                            </button>
+                          )}
                           {!servicio.facturaId && servicio.estado === 'completado' && (
                              <button 
-                               onClick={handleIrAFacturar}
-                               className={`p-2 rounded-lg transition-colors ${
+                               onClick={() => handleGenerarHonorario(servicio.id)}
+                               disabled={accionId === servicio.id}
+                               className={`p-2 rounded-lg transition-colors disabled:opacity-50 ${
                                  darkMode 
-                                  ? 'bg-green-500/10 hover:bg-green-500/20 text-green-400' 
-                                  : 'bg-green-50 hover:bg-green-100 text-green-600'
+                                  ? 'bg-orange-500/15 hover:bg-orange-500/25 text-orange-400' 
+                                  : 'bg-orange-50 hover:bg-orange-100 text-orange-600'
                                }`}
-                               title="Ir a Facturar"
+                               title="Generar honorario"
                              >
                                <DollarSign className="w-4 h-4" />
                              </button>
                           )}
+                          <BotonInformeServicio servicio={servicio} />
                           <button 
                             onClick={() => handleVerDetalle(servicio)}
                             className={`p-2 rounded-lg transition-colors ${
@@ -485,7 +612,7 @@ export function Servicios() {
                 <div>
                   <label className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Tarifa</label>
                   <p className={`mt-1 text-2xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>
-                    ${servicioDetalle.tarifa.toLocaleString()}
+                    S/ {servicioDetalle.tarifa.toLocaleString()}
                   </p>
                 </div>
               </div>

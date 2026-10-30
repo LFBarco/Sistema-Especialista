@@ -767,7 +767,7 @@ export function EspecialistasAfiliados() {
                               Desde
                             </p>
                             <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                              ${especialista.tarifaBase}
+                              S/ {especialista.tarifaBase}
                             </p>
                           </div>
                           <DollarSign className={`w-6 h-6 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`} />
@@ -906,7 +906,7 @@ export function EspecialistasAfiliados() {
                     <CardContent className="p-4">
                       <DollarSign className={`w-8 h-8 mb-2 ${darkMode ? 'text-blue-500' : 'text-blue-600'}`} />
                       <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        ${especialistaSeleccionado.tarifaBase}
+                        S/ {especialistaSeleccionado.tarifaBase}
                       </p>
                       <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-600'}`}>
                         Desde

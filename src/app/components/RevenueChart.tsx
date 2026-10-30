@@ -125,7 +125,7 @@ export function RevenueChart() {
             className="text-xl font-bold"
             style={{ color: darkMode ? '#FFFFFF' : '#0F172A' }}
           >
-            ${currentMonth.ingresos.toLocaleString()}
+            S/ {currentMonth.ingresos.toLocaleString()}
           </p>
         </div>
       </div>
@@ -158,7 +158,7 @@ export function RevenueChart() {
                 style={{ fontSize: '12px', fontWeight: 500 }}
                 tickLine={false}
                 axisLine={{ stroke: darkMode ? '#374151' : '#E2E8F0' }}
-                tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                tickFormatter={(value) => `S/ ${(value / 1000).toFixed(0)}k`}
               />
               <Tooltip
                 contentStyle={{
@@ -177,7 +177,7 @@ export function RevenueChart() {
                   fontSize: '14px'
                 }}
                 formatter={(value: number, name: string) => {
-                  if (name === 'ingresos') return [`$${value.toLocaleString()}`, 'Ingresos'];
+                  if (name === 'ingresos') return [`S/ ${value.toLocaleString()}`, 'Ingresos'];
                   return [value, name === 'servicios' ? 'Servicios' : name];
                 }}
                 cursor={{ stroke: '#F97316', strokeWidth: 1, strokeDasharray: '5 5' }}
@@ -211,7 +211,7 @@ export function RevenueChart() {
               Promedio mensual
             </p>
             <p className="text-base font-bold" style={{ color: darkMode ? '#E5E7EB' : '#0F172A' }}>
-              ${data.length > 0 ? Math.round(data.reduce((acc, d) => acc + d.ingresos, 0) / data.length).toLocaleString() : '0'}
+              S/ {data.length > 0 ? Math.round(data.reduce((acc, d) => acc + d.ingresos, 0) / data.length).toLocaleString() : '0'}
             </p>
           </div>
           <div className="w-px h-10" style={{ backgroundColor: darkMode ? '#1F2937' : '#E2E8F0' }} />
@@ -220,7 +220,7 @@ export function RevenueChart() {
               Total periodo
             </p>
             <p className="text-base font-bold" style={{ color: darkMode ? '#E5E7EB' : '#0F172A' }}>
-              ${data.reduce((acc, d) => acc + d.ingresos, 0).toLocaleString()}
+              S/ {data.reduce((acc, d) => acc + d.ingresos, 0).toLocaleString()}
             </p>
           </div>
         </div>

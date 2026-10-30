@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { useState } from 'react';
 import { NotificacionesMedicas } from './NotificacionesMedicas';
 import { RealtimeStatus } from './RealtimeStatus';
+import { ThemePicker } from './ThemePicker';
 
 interface HeaderProps {
   activeModule?: string;
@@ -13,6 +14,7 @@ export function Header({ activeModule = 'dashboard' }: HeaderProps) {
   const { 
     darkMode, 
     toggleDarkMode, 
+    brandColor,
     solicitudes, 
     handleLogout,
     notificaciones,
@@ -20,7 +22,6 @@ export function Header({ activeModule = 'dashboard' }: HeaderProps) {
     marcarTodasNotificacionesLeidas,
     eliminarNotificacion,
     rolActivo,
-    setRolActivo,
     sedes,
     selectedSedeId,
     setSelectedSedeId,
@@ -44,31 +45,31 @@ export function Header({ activeModule = 'dashboard' }: HeaderProps) {
         return {
           placeholder: 'Buscar solicitudes...',
           icon: Activity,
-          color: '#F97316'
+          color: brandColor
         };
       case 'servicios':
         return {
           placeholder: 'Buscar servicios...',
           icon: Activity,
-          color: '#22C55E'
+          color: 'var(--success)'
         };
       case 'finanzas':
         return {
           placeholder: 'Buscar facturas...',
           icon: TrendingUp,
-          color: '#F97316'
+          color: brandColor
         };
       case 'pacientes':
         return {
           placeholder: 'Buscar pacientes...',
           icon: Activity,
-          color: '#8B5CF6'
+          color: 'var(--info)'
         };
       default:
         return {
           placeholder: 'Buscar en el sistema...',
           icon: Search,
-          color: '#F97316'
+          color: brandColor
         };
     }
   };
@@ -210,53 +211,17 @@ export function Header({ activeModule = 'dashboard' }: HeaderProps) {
           </div>
         )}
 
-        {/* Role Switch - NUEVO */}
-        <motion.div
-          className="flex items-center rounded-lg p-1 transition-all duration-200"
+        {/* Este portal es solo del especialista; la clínica opera en Veterinari. */}
+        <div
+          className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium"
           style={{
-            backgroundColor: darkMode ? 'rgba(31, 41, 55, 0.5)' : '#F8FAFC',
+            backgroundColor: darkMode ? 'rgba(249, 115, 22, 0.12)' : 'rgba(249, 115, 22, 0.08)',
+            color: '#EA580C',
           }}
         >
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setRolActivo('especialista')}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-md transition-all duration-200"
-            style={{
-              backgroundColor: rolActivo === 'especialista' 
-                ? '#F97316' 
-                : 'transparent',
-              color: rolActivo === 'especialista' 
-                ? '#FFFFFF' 
-                : (darkMode ? '#9CA3AF' : '#64748B')
-            }}
-          >
-            <UserCircle className="w-4 h-4" />
-            <span className="text-sm font-medium hidden lg:inline">
-              Especialista
-            </span>
-          </motion.button>
-          
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setRolActivo('clinica')}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-md transition-all duration-200"
-            style={{
-              backgroundColor: rolActivo === 'clinica' 
-                ? '#F97316' 
-                : 'transparent',
-              color: rolActivo === 'clinica' 
-                ? '#FFFFFF' 
-                : (darkMode ? '#9CA3AF' : '#64748B')
-            }}
-          >
-            <Building2 className="w-4 h-4" />
-            <span className="text-sm font-medium hidden lg:inline">
-              Clínica
-            </span>
-          </motion.button>
-        </motion.div>
+          <UserCircle className="w-3.5 h-3.5" />
+          Especialista
+        </div>
 
         {/* Separator */}
         <div 
@@ -264,16 +229,23 @@ export function Header({ activeModule = 'dashboard' }: HeaderProps) {
           style={{ backgroundColor: darkMode ? '#374151' : '#E2E8F0' }}
         />
 
-        {/* Theme toggle - Mejorado */}
+        {/* Temas de marca + claro/oscuro */}
+        <div
+          className="hidden sm:flex items-center px-2 py-1.5 rounded-lg"
+          style={{ backgroundColor: darkMode ? 'rgba(31, 41, 55, 0.5)' : '#F8FAFC' }}
+        >
+          <ThemePicker variant="compact" />
+        </div>
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={toggleDarkMode}
-          className="p-2.5 rounded-lg transition-all duration-200"
+          className="sm:hidden p-2.5 rounded-lg transition-all duration-200"
           style={{
             backgroundColor: darkMode ? 'rgba(31, 41, 55, 0.5)' : '#F8FAFC',
             color: darkMode ? '#FACC15' : '#64748B'
           }}
+          title="Modo claro/oscuro"
         >
           {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
         </motion.button>

@@ -119,7 +119,7 @@ export function MisFacturas() {
                   {isModoSede ? 'Por Validar (Operativo)' : 'Por Pagar (Tesorería)'}
                 </p>
                 <p className={`text-3xl font-bold mt-2 ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`}>
-                  ${totalAccionable.toLocaleString()}
+                  S/ {totalAccionable.toLocaleString()}
                 </p>
               </div>
               <div className="w-12 h-12 rounded-lg bg-yellow-500/20 flex items-center justify-center">
@@ -137,7 +137,7 @@ export function MisFacturas() {
                   Total Pagado
                 </p>
                 <p className={`text-3xl font-bold mt-2 ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
-                  ${totalPagado.toLocaleString()}
+                  S/ {totalPagado.toLocaleString()}
                 </p>
               </div>
               <div className="w-12 h-12 rounded-lg bg-green-500/20 flex items-center justify-center">
@@ -281,7 +281,7 @@ export function MisFacturas() {
                         Total
                       </p>
                       <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        ${factura.total.toLocaleString()}
+                        S/ {factura.total.toLocaleString()}
                       </p>
                     </div>
 

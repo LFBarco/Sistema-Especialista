@@ -267,7 +267,7 @@ export function SolicitudServicioModal({ isOpen, onClose, prefilledData, fromAge
                       >
                         {especialistas.map((esp) => (
                           <option key={esp.id} value={esp.id}>
-                            Dr. {esp.nombre} {esp.apellido} - {esp.especialidad} (${esp.tarifa})
+                            Dr. {esp.nombre} {esp.apellido} - {esp.especialidad} (S/ {esp.tarifa})
                           </option>
                         ))}
                       </select>
@@ -298,7 +298,7 @@ export function SolicitudServicioModal({ isOpen, onClose, prefilledData, fromAge
                             {especialistaActual.especialidad}
                           </p>
                           <p className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                            ⭐ {especialistaActual.rating} • {especialistaActual.experiencia} años exp. • ${especialistaActual.tarifa}
+                            ⭐ {especialistaActual.rating} • {especialistaActual.experiencia} años exp. • S/ {especialistaActual.tarifa}
                           </p>
                         </div>
                         {prefilledData?.fecha && prefilledData?.hora && (
@@ -339,7 +339,7 @@ export function SolicitudServicioModal({ isOpen, onClose, prefilledData, fromAge
                     >
                       {tiposServicio.map((tipo) => (
                         <option key={tipo.value} value={tipo.value}>
-                          {tipo.label} {tipo.tarifa > 0 && `- $${tipo.tarifa}`}
+                          {tipo.label} {tipo.tarifa > 0 && `- S/ ${tipo.tarifa}`}
                         </option>
                       ))}
                     </select>

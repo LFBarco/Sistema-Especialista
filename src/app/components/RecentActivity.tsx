@@ -15,7 +15,7 @@ export function RecentActivity() {
       title: s.estado === 'completado' ? 'Servicio completado' : 'Servicio confirmado',
       description: `${s.tipo} en ${s.clinica} - ${s.paciente}`,
       time: new Date(s.fecha).toLocaleDateString('es-ES'),
-      amount: `$${s.tarifa}`
+      amount: `S/ ${s.tarifa}`
     })),
     ...solicitudes.filter(s => s.estado === 'pendiente').slice(-2).map(s => ({
       id: `solicitud-${s.id}`,
@@ -39,7 +39,7 @@ export function RecentActivity() {
       title: f.estado === 'pagada' ? 'Pago recibido' : 'Factura generada',
       description: `${f.numero} - ${f.clinica}`,
       time: new Date(f.fecha).toLocaleDateString('es-ES'),
-      amount: f.estado === 'pagada' ? `+$${f.total}` : `$${f.total}`
+      amount: f.estado === 'pagada' ? `+S/ ${f.total}` : `S/ ${f.total}`
     }))
   ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 5);
 

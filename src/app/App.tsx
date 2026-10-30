@@ -1,42 +1,49 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
-import { ChatInbox } from './components/ChatInbox';
-import { Dashboard } from './components/Dashboard';
-import { DashboardClinica } from './components/DashboardClinica';
-import { AgendaBusyFree } from './components/AgendaBusyFree';
-import { ConciliacionFinanciera } from './components/ConciliacionFinanciera';
-import { EstadoCuentaClinica } from './components/EstadoCuentaClinica';
-import { EstadoCuentaClinicaV2 } from './components/EstadoCuentaClinicaV2';
-import { MisFacturas } from './components/MisFacturas';
-import { MetricasClinica } from './components/MetricasClinica';
-import { EspecialistasAfiliados } from './components/EspecialistasAfiliados';
-import { RegistroEspecialista } from './components/RegistroEspecialista';
-import { PerfilProfesional } from './components/PerfilProfesional';
-import { VerificacionProfesional } from './components/VerificacionProfesional';
-import { ReportesAvanzados } from './components/ReportesAvanzados';
-import { Solicitudes } from './components/Solicitudes';
-import { SolicitudesV2 } from './components/SolicitudesV2';
-import { Agenda } from './components/Agenda';
-import { Servicios } from './components/Servicios';
-import { FacturacionEnterpriseV2 as Facturacion } from './components/FacturacionEnterpriseV2';
-import { FacturacionElectronica } from './components/FacturacionElectronica';
-import { Finanzas } from './components/Finanzas';
-import { Clinicas } from './components/Clinicas';
-import { Perfil } from './components/Perfil';
-import { PerfilClinica } from './components/PerfilClinica';
-import { GoogleCalendarSync } from './components/GoogleCalendarSync';
-import { Usuarios } from './components/Usuarios';
-import { Pacientes } from './components/Pacientes';
-import { Configuraciones } from './components/Configuraciones';
-import { GestionSedes } from './components/GestionSedes';
-import { Interconsultas } from './components/Interconsultas';
+import React, { useState, useEffect, createContext, useContext, lazy, Suspense } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { PremiumLogin } from './components/PremiumLogin';
-import { RegistroSelector } from './components/RegistroSelector';
-import { RegistroClinicaWizard } from './components/RegistroClinicaWizard';
-import { RegistroEspecialistaWizard } from './components/RegistroEspecialistaWizard';
 import { MobileNav } from './components/MobileNav';
-import { SpecialistDashboardMobile } from './components/mobile/SpecialistDashboardMobile';
+import {
+  aplicarTemaEnDocumento,
+  brandHex,
+  leerBrandTheme,
+  leerDarkMode,
+  type BrandTheme,
+} from './utils/theme';
+
+// Cada módulo se descarga solo cuando se abre, para que la primera carga sea liviana.
+const ChatInbox = lazy(() => import('./components/ChatInbox').then(m => ({ default: m.ChatInbox })));
+const Dashboard = lazy(() => import('./components/Dashboard').then(m => ({ default: m.Dashboard })));
+const ConciliacionFinanciera = lazy(() => import('./components/ConciliacionFinanciera').then(m => ({ default: m.ConciliacionFinanciera })));
+const EstadoCuentaClinica = lazy(() => import('./components/EstadoCuentaClinica').then(m => ({ default: m.EstadoCuentaClinica })));
+const RegistroEspecialista = lazy(() => import('./components/RegistroEspecialista').then(m => ({ default: m.RegistroEspecialista })));
+const PerfilProfesional = lazy(() => import('./components/PerfilProfesional').then(m => ({ default: m.PerfilProfesional })));
+const VerificacionProfesional = lazy(() => import('./components/VerificacionProfesional').then(m => ({ default: m.VerificacionProfesional })));
+const ReportesAvanzados = lazy(() => import('./components/ReportesAvanzados').then(m => ({ default: m.ReportesAvanzados })));
+const Solicitudes = lazy(() => import('./components/Solicitudes').then(m => ({ default: m.Solicitudes })));
+const Agenda = lazy(() => import('./components/Agenda').then(m => ({ default: m.Agenda })));
+const Servicios = lazy(() => import('./components/Servicios').then(m => ({ default: m.Servicios })));
+const FacturacionElectronica = lazy(() => import('./components/FacturacionElectronica').then(m => ({ default: m.FacturacionElectronica })));
+const Finanzas = lazy(() => import('./components/Finanzas').then(m => ({ default: m.Finanzas })));
+const Clinicas = lazy(() => import('./components/Clinicas').then(m => ({ default: m.Clinicas })));
+const Perfil = lazy(() => import('./components/Perfil').then(m => ({ default: m.Perfil })));
+const GoogleCalendarSync = lazy(() => import('./components/GoogleCalendarSync').then(m => ({ default: m.GoogleCalendarSync })));
+const Usuarios = lazy(() => import('./components/Usuarios').then(m => ({ default: m.Usuarios })));
+const Pacientes = lazy(() => import('./components/Pacientes').then(m => ({ default: m.Pacientes })));
+const Configuraciones = lazy(() => import('./components/Configuraciones').then(m => ({ default: m.Configuraciones })));
+const Interconsultas = lazy(() => import('./components/Interconsultas').then(m => ({ default: m.Interconsultas })));
+const RegistroSelector = lazy(() => import('./components/RegistroSelector').then(m => ({ default: m.RegistroSelector })));
+const RegistroClinicaWizard = lazy(() => import('./components/RegistroClinicaWizard').then(m => ({ default: m.RegistroClinicaWizard })));
+const RegistroEspecialistaWizard = lazy(() => import('./components/RegistroEspecialistaWizard').then(m => ({ default: m.RegistroEspecialistaWizard })));
+const SpecialistDashboardMobile = lazy(() => import('./components/mobile/SpecialistDashboardMobile').then(m => ({ default: m.SpecialistDashboardMobile })));
+
+function CargandoModulo() {
+  return (
+    <div className="flex items-center justify-center py-24">
+      <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
 import { toast } from 'sonner';
 import { Toaster } from './components/ui/sonner';
 import * as API from './utils/api';
@@ -56,12 +63,40 @@ export interface Solicitud {
   especie: string;
   fechaSolicitada: string;
   horaSolicitada: string;
-  urgencia: 'baja' | 'media' | 'alta';
+  urgencia: 'baja' | 'media' | 'alta' | 'critica';
   descripcion: string;
   tarifa: number;
   direccion: string;
-  estado: 'pendiente' | 'aceptada' | 'rechazada';
+  estado: 'pendiente' | 'aceptada' | 'rechazada' | 'cancelada';
   fechaSolicitud: string;
+  motivoRechazo?: string;
+  origen?: {
+    tipo: 'integracion';
+    integradorId: string;
+    integradorNombre: string;
+    referenciaExterna?: string | null;
+    sedeExternaId?: string | null;
+  };
+  /** Enlace temporal a la historia clínica en el PMS (Veterinari). */
+  accesoHistoria?: {
+    url: string;
+    expiraEn?: string | null;
+    pacientes?: string[] | null;
+  } | null;
+  pacienteDetalle?: {
+    nombre?: string;
+    especie?: string;
+    raza?: string;
+    propietario?: { nombre?: string; telefono?: string; email?: string };
+  } | null;
+  antecedentes?: unknown;
+}
+
+export interface InformeServicio {
+  path: string;
+  nombre: string;
+  tamano?: number;
+  subidoEn: string;
 }
 
 export interface Servicio {
@@ -81,6 +116,11 @@ export interface Servicio {
   telefono?: string;
   email?: string;
   direccion?: string;
+  solicitudId?: string;
+  especialistaId?: number;
+  informe?: InformeServicio;
+  /** ID del evento en Google Calendar (sync bidireccional). */
+  googleEventId?: string;
 }
 
 export interface Factura {
@@ -275,8 +315,11 @@ interface AppContextType {
   setSelectedSedeId: (id: string) => void;
   darkMode: boolean;
   toggleDarkMode: () => void;
+  brandTheme: import('./utils/theme').BrandTheme;
+  setBrandTheme: (theme: import('./utils/theme').BrandTheme) => void;
+  brandColor: string;
   aceptarSolicitud: (id: number) => void;
-  rechazarSolicitud: (id: number) => void;
+  rechazarSolicitud: (id: number, motivo?: string) => void;
   crearSolicitud: (nuevaSolicitud: Omit<Solicitud, 'id'>) => Promise<boolean>;
   completarServicio: (id: number) => void;
   generarFactura: (servicioId: number) => void;
@@ -458,7 +501,8 @@ export default function App() {
   
   // Estado de la aplicación
   const [activeModule, setActiveModule] = useState('dashboard');
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState(() => leerDarkMode());
+  const [brandTheme, setBrandThemeState] = useState<BrandTheme>(() => leerBrandTheme());
   const [selectedSedeId, setSelectedSedeId] = useState<string>('all');
   const [moduleData, setModuleData] = useState<any>(null);
   const [rolActivo, setRolActivo] = useState<'especialista' | 'clinica'>('especialista');
@@ -488,7 +532,13 @@ export default function App() {
   const [accesosClinic, setAccesosClinic] = useState<AccesoClinico[]>([]);
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
 
-  const toggleDarkMode = () => setDarkMode(!darkMode);
+  const toggleDarkMode = () => setDarkMode((d) => !d);
+  const setBrandTheme = (theme: BrandTheme) => setBrandThemeState(theme);
+  const brandColor = brandHex(brandTheme, darkMode);
+
+  useEffect(() => {
+    aplicarTemaEnDocumento(brandTheme, darkMode);
+  }, [brandTheme, darkMode]);
 
   // Funciones para manejar notificaciones
   const marcarNotificacionLeida = (id: number) => {
@@ -726,25 +776,43 @@ export default function App() {
         direccion: solicitud.direccion,
         estado: 'confirmado',
         tarifa: solicitud.tarifa,
-        notas: solicitud.descripcion
+        notas: solicitud.descripcion,
+        solicitudId: String(solicitud.id),
+        especialistaId: solicitud.especialistaId,
       };
 
       const servicioCreado = await API.serviciosAPI.create(nuevoServicio);
       setServicios(prev => [...prev, servicioCreado]);
 
-      toast.success('Solicitud aceptada y agregada a la agenda');
+      // Sync opcional a Google Calendar si el especialista ya conectó OAuth
+      try {
+        const { empujarServicioAGoogle } = await import('./utils/googleCalendar');
+        const googleEventId = await empujarServicioAGoogle(servicioCreado);
+        if (googleEventId) {
+          const conGoogle = { ...servicioCreado, googleEventId };
+          await API.serviciosAPI.update(servicioCreado.id, conGoogle);
+          setServicios((prev) => prev.map((s) => (s.id === servicioCreado.id ? conGoogle : s)));
+        }
+      } catch {
+        /* sin token o error de red: la agenda local ya quedó bien */
+      }
     } catch (error) {
       console.error('Error aceptando solicitud:', error);
       toast.error('Error al aceptar la solicitud');
     }
   };
 
-  const rechazarSolicitud = async (id: number) => {
+  const rechazarSolicitud = async (id: number, motivo?: string) => {
     const solicitud = solicitudes.find(s => s.id === id);
     if (!solicitud) return;
 
     try {
-      const solicitudActualizada = { ...solicitud, estado: 'rechazada' as const };
+      const motivoLimpio = motivo?.trim();
+      const solicitudActualizada: Solicitud = {
+        ...solicitud,
+        estado: 'rechazada',
+        ...(motivoLimpio ? { motivoRechazo: motivoLimpio } : {}),
+      };
       await API.solicitudesAPI.update(id, solicitudActualizada);
 
       setSolicitudes(prev => prev.map(s => 
@@ -797,7 +865,13 @@ export default function App() {
       ));
 
       await API.serviciosAPI.update(id, servicioActualizado);
-      toast.success('Servicio marcado como completado');
+      toast.success('Servicio completado', {
+        description: 'Siguiente: sube el informe y genera el honorario',
+        action: {
+          label: 'Honorarios',
+          onClick: () => navegarA('facturacion'),
+        },
+      });
     } catch (error) {
       console.error('Error completando servicio:', error);
       toast.error('Error al completar el servicio');
@@ -997,6 +1071,8 @@ export default function App() {
         sedesIds: metadata.sedesIds
       });
 
+      // Este portal es del especialista; la clínica opera en Veterinari.
+      setRolActivo('especialista');
       setIsAuthenticated(true);
       setActiveModule('dashboard');
       toast.success(`Bienvenido!`);
@@ -1084,7 +1160,7 @@ export default function App() {
                 rol: 'admin',
                 email: userData.email
             });
-            setRolActivo('clinica');
+            setRolActivo('especialista');
         } else {
             if (result.clinicas && result.clinicas.length > 0) {
                 setUserClinicas(result.clinicas);
@@ -1347,6 +1423,9 @@ export default function App() {
     setSelectedSedeId,
     darkMode,
     toggleDarkMode,
+    brandTheme,
+    setBrandTheme,
+    brandColor,
     aceptarSolicitud,
     rechazarSolicitud,
     crearSolicitud,
@@ -1391,34 +1470,7 @@ export default function App() {
 
   const renderModule = () => {
     // Si el rol es clinica, mostrar vistas especificas
-    if (rolActivo === 'clinica') {
-      switch (activeModule) {
-        case 'dashboard':
-          return <DashboardClinica />;
-        case 'mensajes':
-          return <ChatInbox />;
-        case 'agenda':
-          return <AgendaBusyFree />;
-        case 'solicitudes':
-          return <SolicitudesV2 />;
-        case 'metricas':
-          return <MetricasClinica />;
-        case 'especialistas':
-          return <EspecialistasAfiliados />;
-        case 'estado-cuenta':
-          return <EstadoCuentaClinicaV2 />;
-        case 'mis-facturas':
-          return <MisFacturas />;
-        case 'perfil':
-          return <PerfilClinica />;
-        case 'sedes':
-          return <GestionSedes />;
-        default:
-          return <DashboardClinica />;
-      }
-    }
-
-    // Vista especialista (por defecto)
+    // Portal 100 % especialista. La clínica opera en Veterinari.
     switch (activeModule) {
       case 'dashboard':
         return <Dashboard />;
@@ -1460,6 +1512,12 @@ export default function App() {
         return <Configuraciones />;
       case 'google-calendar':
         return <GoogleCalendarSync />;
+      // Rutas heredadas de la vista clínica → redirigidas al especialista
+      case 'metricas':
+      case 'especialistas':
+      case 'mis-facturas':
+      case 'sedes':
+        return <Dashboard />;
       default:
         return <Dashboard />;
     }
@@ -1467,6 +1525,15 @@ export default function App() {
 
   // Render auth screens
   if (!isAuthenticated) {
+    return (
+      <AppContext.Provider value={contextValue}>
+        <Suspense fallback={<CargandoModulo />}>{renderAuth()}</Suspense>
+        <Toaster />
+      </AppContext.Provider>
+    );
+  }
+
+  function renderAuth() {
     switch (vistaAuth) {
       case 'selector':
         return (
@@ -1497,7 +1564,7 @@ export default function App() {
           <PremiumLogin
             onLogin={handleLogin}
             onGoogleLogin={handleGoogleLogin}
-            onRegister={() => setVistaAuth('selector')}
+            onRegister={() => setVistaAuth('registro-especialista')}
             onDemoLogin={handleDemoLogin}
           />
         );
@@ -1508,7 +1575,9 @@ export default function App() {
   if (activeModule === 'mobile-specialist') {
     return (
       <AppContext.Provider value={contextValue}>
-        <SpecialistDashboardMobile />
+        <Suspense fallback={<CargandoModulo />}>
+          <SpecialistDashboardMobile />
+        </Suspense>
         <Toaster />
       </AppContext.Provider>
     );
@@ -1516,12 +1585,17 @@ export default function App() {
 
   return (
     <AppContext.Provider value={contextValue}>
-      <div className={`flex h-screen ${darkMode ? 'dark bg-gray-900' : 'bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50'}`}>
+      <div
+        className={`flex h-screen ${darkMode ? 'dark' : ''}`}
+        style={{ backgroundColor: 'var(--surface-muted)' }}
+      >
         <Sidebar activeModule={activeModule} setActiveModule={setActiveModule} />
         <div className="flex-1 flex flex-col overflow-hidden relative">
           <Header activeModule={activeModule} />
           <main className="flex-1 overflow-y-auto pb-24 lg:pb-0 scroll-smooth">
-            {renderModule()}
+            <Suspense fallback={<CargandoModulo />}>
+              {renderModule()}
+            </Suspense>
           </main>
           <MobileNav activeModule={activeModule} setActiveModule={setActiveModule} />
         </div>

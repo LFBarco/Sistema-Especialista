@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Calendar, Clock, MapPin, AlertCircle, User, Building2, FileText, Save, CheckCircle, Edit2, Trash2, RefreshCw, CheckCheck, XCircle, History } from 'lucide-react';
+import { X, Calendar, Clock, MapPin, AlertCircle, User, Building2, FileText, Save, CheckCircle, Edit2, Trash2, RefreshCw, CheckCheck, XCircle, History, ExternalLink } from 'lucide-react';
 import { useApp } from '../App';
 import { getClinicaColor } from './ClinicaFilter';
 import type { Servicio } from '../App';
+import { BotonInformeServicio } from './integracion/BotonInformeServicio';
+import { servicioAIcs } from './AgendaCalendarioPro';
+import { descargarIcs } from '../utils/googleCalendar';
+import { toast } from 'sonner';
 
 interface PanelDetalleCitaProps {
   cita: Servicio | null;
@@ -15,7 +19,11 @@ interface PanelDetalleCitaProps {
 }
 
 export function PanelDetalleCita({ cita, onClose, onCambiarEstado, onEliminar, onReprogramar, onVerPaciente }: PanelDetalleCitaProps) {
-  const { darkMode, getClinicaByNombre, generarFactura, navegarA } = useApp();
+  const { darkMode, getClinicaByNombre, generarFactura, navegarA, usuarioActual, solicitudes } = useApp();
+  const solicitudOrigen = cita?.solicitudId
+    ? solicitudes.find(s => String(s.id) === String(cita.solicitudId))
+    : undefined;
+  const accesoHistoria = solicitudOrigen?.accesoHistoria;
   const [notas, setNotas] = useState('');
   const [guardandoNotas, setGuardandoNotas] = useState(false);
   const [notasGuardadas, setNotasGuardadas] = useState(false);
@@ -141,7 +149,7 @@ export function PanelDetalleCita({ cita, onClose, onCambiarEstado, onEliminar, o
     {
       evento: 'Cita confirmada',
       fecha: new Date(cita.fecha + ' 09:30'),
-      usuario: 'Dr. Luis Barco'
+      usuario: usuarioActual?.nombre || 'Especialista'
     }
   ];
 
@@ -211,6 +219,18 @@ export function PanelDetalleCita({ cita, onClose, onCambiarEstado, onEliminar, o
         outlined: true
       });
     }
+
+    acciones.push({
+      label: 'Exportar a Google (.ics)',
+      action: () => {
+        descargarIcs(`cita-${cita.id}.ics`, servicioAIcs(cita));
+        toast.success('Archivo descargado — ábrelo o impórtalo en Google Calendar');
+      },
+      color: '#2563EB',
+      bg: darkMode ? 'rgba(37, 99, 235, 0.15)' : 'rgba(37, 99, 235, 0.1)',
+      icon: ExternalLink,
+      outlined: true,
+    });
 
     return acciones;
   };
@@ -397,7 +417,7 @@ export function PanelDetalleCita({ cita, onClose, onCambiarEstado, onEliminar, o
                     className="text-lg font-bold"
                     style={{ color: '#3B82F6' }}
                   >
-                    ${cita.tarifa}
+                    S/ {cita.tarifa}
                   </span>
                 </div>
               </div>
@@ -444,6 +464,29 @@ export function PanelDetalleCita({ cita, onClose, onCambiarEstado, onEliminar, o
                     </p>
                   </div>
                 </div>
+
+                {accesoHistoria?.url && (
+                  <a
+                    href={accesoHistoria.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full mb-2 px-4 py-2.5 rounded-lg text-sm font-medium flex items-center justify-center gap-2 text-white"
+                    style={{ backgroundColor: '#2563EB' }}
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Ver historia clínica
+                    {solicitudOrigen?.origen?.integradorNombre
+                      ? ` (${solicitudOrigen.origen.integradorNombre})`
+                      : ''}
+                  </a>
+                )}
+
+                {['completado', 'facturado', 'pagado'].includes(cita.estado) && (
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <span className="text-xs" style={{ color: darkMode ? '#94A3B8' : '#64748B' }}>Informe:</span>
+                    <BotonInformeServicio servicio={cita} />
+                  </div>
+                )}
 
                 <motion.button
                   whileHover={{ scale: 1.01 }}

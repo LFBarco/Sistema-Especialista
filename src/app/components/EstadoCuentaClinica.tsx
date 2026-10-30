@@ -46,20 +46,20 @@ export function EstadoCuentaClinica() {
         `Generado: ${new Date().toLocaleDateString('es-MX')}`,
         '',
         'RESUMEN FINANCIERO',
-        `Total Facturado,$${totalFacturado.toLocaleString()}`,
-        `Total Pagado,$${totalPagado.toLocaleString()}`,
-        `Saldo Pendiente,$${totalPendiente.toLocaleString()}`,
+        `Total Facturado,S/ ${totalFacturado.toLocaleString()}`,
+        `Total Pagado,S/ ${totalPagado.toLocaleString()}`,
+        `Saldo Pendiente,S/ ${totalPendiente.toLocaleString()}`,
         '',
         'DETALLE DE FACTURAS',
         'Número,Fecha,Vencimiento,Clínica,Estado,Subtotal,Impuestos,Total',
         ...facturasClinica.map(f =>
-          `${f.numero},${f.fecha},${f.vencimiento},${f.clinica},${f.estado},$${f.subtotal},$${f.impuestos},$${f.total}`
+          `${f.numero},${f.fecha},${f.vencimiento},${f.clinica},${f.estado},S/ ${f.subtotal},S/ ${f.impuestos},S/ ${f.total}`
         ),
         '',
         'HISTORIAL DE PAGOS',
         'Fecha,Clínica,Monto,Método,Referencia,Estado',
         ...pagosClinica.map(p =>
-          `${p.fecha},${p.clinica},$${p.monto},${p.metodoPago},${p.referencia},${p.estado}`
+          `${p.fecha},${p.clinica},S/ ${p.monto},${p.metodoPago},${p.referencia},${p.estado}`
         ),
       ];
 
@@ -143,7 +143,7 @@ export function EstadoCuentaClinica() {
                   Total Facturado
                 </p>
                 <p className={`text-3xl font-bold mt-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  ${totalFacturado.toLocaleString()}
+                  S/ {totalFacturado.toLocaleString()}
                 </p>
                 <p className={`text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
                   {facturasClinica.length} facturas
@@ -164,7 +164,7 @@ export function EstadoCuentaClinica() {
                   Total Pagado
                 </p>
                 <p className={`text-3xl font-bold mt-2 ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
-                  ${totalPagado.toLocaleString()}
+                  S/ {totalPagado.toLocaleString()}
                 </p>
                 <p className={`text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
                   {Math.round((totalPagado / totalFacturado) * 100)}% del total
@@ -185,7 +185,7 @@ export function EstadoCuentaClinica() {
                   Saldo Pendiente
                 </p>
                 <p className={`text-3xl font-bold mt-2 ${darkMode ? 'text-red-400' : 'text-red-600'}`}>
-                  ${totalPendiente.toLocaleString()}
+                  S/ {totalPendiente.toLocaleString()}
                 </p>
                 <p className={`text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
                   Por cobrar
@@ -260,7 +260,7 @@ export function EstadoCuentaClinica() {
                       {factura.servicios.map(s => s.descripcion).join(', ')}
                     </td>
                     <td className={`p-4 font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                      ${factura.total.toLocaleString()}
+                      S/ {factura.total.toLocaleString()}
                     </td>
                     <td className="p-4">
                       {factura.estado === 'pagada' ? (
@@ -333,7 +333,7 @@ export function EstadoCuentaClinica() {
                 </div>
                 <div className="text-right">
                   <p className={`font-bold text-lg ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
-                    ${pago.monto.toLocaleString()}
+                    S/ {pago.monto.toLocaleString()}
                   </p>
                   <div className="flex items-center gap-2 justify-end mt-1">
                     <Calendar className={`w-4 h-4 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />

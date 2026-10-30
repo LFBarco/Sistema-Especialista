@@ -4,7 +4,7 @@ import { Bell, X, Check, CheckCheck, Calendar, User, Building2, CreditCard, Aler
 import { useApp } from '../App';
 
 export type NotificacionPrioridad = 'critica' | 'importante' | 'informativa';
-export type NotificacionTipo = 'solicitud' | 'cita' | 'paciente' | 'facturacion' | 'sistema' | 'urgencia';
+export type NotificacionTipo = 'solicitud' | 'cita' | 'paciente' | 'facturacion' | 'sistema' | 'urgencia' | 'interconsulta' | 'mensaje';
 
 export interface Notificacion {
   id: number;

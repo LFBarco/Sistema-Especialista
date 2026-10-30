@@ -149,7 +149,7 @@ export function ConciliacionFinanciera() {
   const stats = [
     {
       title: 'Total Facturado',
-      value: `$${totalFacturado.toLocaleString()}`,
+      value: `S/ ${totalFacturado.toLocaleString()}`,
       icon: FileText,
       color: '#3B82F6',
       bgColor: darkMode ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.1)',
@@ -157,7 +157,7 @@ export function ConciliacionFinanciera() {
     },
     {
       title: 'Total Recibido',
-      value: `$${totalRecibido.toLocaleString()}`,
+      value: `S/ ${totalRecibido.toLocaleString()}`,
       icon: DollarSign,
       color: '#10B981',
       bgColor: darkMode ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.1)',
@@ -165,7 +165,7 @@ export function ConciliacionFinanciera() {
     },
     {
       title: 'Pendiente de Pago',
-      value: `$${totalPendiente.toLocaleString()}`,
+      value: `S/ ${totalPendiente.toLocaleString()}`,
       icon: AlertCircle,
       color: '#EF4444',
       bgColor: darkMode ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.1)',
@@ -344,10 +344,10 @@ export function ConciliacionFinanciera() {
                       {conciliacion.clinica}
                     </td>
                     <td className={`p-4 font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                      ${conciliacion.montoFactura.toLocaleString()}
+                      S/ {conciliacion.montoFactura.toLocaleString()}
                     </td>
                     <td className={`p-4 font-semibold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
-                      ${conciliacion.montoPagado.toLocaleString()}
+                      S/ {conciliacion.montoPagado.toLocaleString()}
                     </td>
                     <td className={`p-4 font-semibold ${
                       conciliacion.diferencia === 0 
@@ -356,7 +356,7 @@ export function ConciliacionFinanciera() {
                           ? darkMode ? 'text-red-400' : 'text-red-600'
                           : darkMode ? 'text-orange-400' : 'text-orange-600'
                     }`}>
-                      {conciliacion.diferencia === 0 ? '-' : `$${Math.abs(conciliacion.diferencia).toLocaleString()}`}
+                      {conciliacion.diferencia === 0 ? '-' : `S/ ${Math.abs(conciliacion.diferencia).toLocaleString()}`}
                     </td>
                     <td className="p-4">
                       {getEstadoBadge(conciliacion.estado)}
@@ -450,15 +450,15 @@ export function ConciliacionFinanciera() {
               <div className={`p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'} text-sm space-y-1`}>
                 <div className="flex justify-between">
                    <span className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Monto Factura:</span>
-                   <span className="font-semibold">${selectedFacturaPago.montoFactura.toLocaleString()}</span>
+                   <span className="font-semibold">S/ {selectedFacturaPago.montoFactura.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
                    <span className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Pagado:</span>
-                   <span className="font-semibold text-green-500">${selectedFacturaPago.montoPagado.toLocaleString()}</span>
+                   <span className="font-semibold text-green-500">S/ {selectedFacturaPago.montoPagado.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
                    <span className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Pendiente:</span>
-                   <span className="font-bold text-red-500">${selectedFacturaPago.diferencia.toLocaleString()}</span>
+                   <span className="font-bold text-red-500">S/ {selectedFacturaPago.diferencia.toLocaleString()}</span>
                 </div>
               </div>
 

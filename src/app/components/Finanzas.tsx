@@ -246,14 +246,14 @@ export function Finanzas() {
         `Período: ${mesNombre} ${filtroAnio}`,
         '',
         '--- RESUMEN ---',
-        `Ingresos del Mes,$${ingresosMes.toLocaleString()}`,
-        `Gastos del Mes,$${gastosMes.toLocaleString()}`,
-        `Utilidad Neta,$${utilidadMes.toLocaleString()}`,
-        `Cuentas por Cobrar,$${totalPorCobrar.toLocaleString()}`,
-        `Cuentas por Pagar,$${totalPorPagar.toLocaleString()}`,
+        `Ingresos del Mes,S/ ${ingresosMes.toLocaleString()}`,
+        `Gastos del Mes,S/ ${gastosMes.toLocaleString()}`,
+        `Utilidad Neta,S/ ${utilidadMes.toLocaleString()}`,
+        `Cuentas por Cobrar,S/ ${totalPorCobrar.toLocaleString()}`,
+        `Cuentas por Pagar,S/ ${totalPorPagar.toLocaleString()}`,
         '',
         '--- INGRESOS POR CATEGORÍA ---',
-        ...Object.entries(ingresosPorCategoria).map(([tipo, monto]) => `${tipo},$${(monto as number).toLocaleString()}`),
+        ...Object.entries(ingresosPorCategoria).map(([tipo, monto]) => `${tipo},S/ ${(monto as number).toLocaleString()}`),
         '',
         '--- GASTOS DETALLE ---',
         'Fecha,Categoría,Descripción,Monto,Método de Pago',
@@ -262,11 +262,11 @@ export function Finanzas() {
             const fecha = new Date(g.fecha);
             return fecha.getMonth() === parseInt(filtroMes) && fecha.getFullYear() === parseInt(filtroAnio);
           })
-          .map(g => `${g.fecha},${g.categoria},${g.descripcion},$${g.monto},${g.metodoPago}`),
+          .map(g => `${g.fecha},${g.categoria},${g.descripcion},S/ ${g.monto},${g.metodoPago}`),
         '',
         '--- CUENTAS POR COBRAR ---',
         'Factura,Clínica,Total,Estado,Vencimiento',
-        ...cuentasPorCobrar.map(f => `${f.numero},${f.clinica},$${f.total},${f.estado},${f.vencimiento}`)
+        ...cuentasPorCobrar.map(f => `${f.numero},${f.clinica},S/ ${f.total},${f.estado},${f.vencimiento}`)
       ];
 
       const csvContent = rows.join('\n');
@@ -321,7 +321,7 @@ export function Finanzas() {
               <div className="flex-1">
                 <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>Ingresos del Mes</p>
                 <p className={`text-3xl ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
-                  ${ingresosMes.toLocaleString()}
+                  S/ {ingresosMes.toLocaleString()}
                 </p>
                 <div className="flex items-center text-sm text-green-600">
                   <TrendingUp className="w-4 h-4 mr-1" />
@@ -339,7 +339,7 @@ export function Finanzas() {
               <div className="flex-1">
                 <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>Gastos del Mes</p>
                 <p className={`text-3xl ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
-                  ${gastosMes.toLocaleString()}
+                  S/ {gastosMes.toLocaleString()}
                 </p>
                 <p className={`text-sm text-rose-600`}>
                   {gastos.filter(g => new Date(g.fecha).getMonth() === parseInt(filtroMes)).length} gastos registrados
@@ -356,7 +356,7 @@ export function Finanzas() {
               <div className="flex-1">
                 <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>Cuentas por Cobrar</p>
                 <p className={`text-3xl ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
-                  ${totalPorCobrar.toLocaleString()}
+                  S/ {totalPorCobrar.toLocaleString()}
                 </p>
                 <div className="flex items-center gap-2">
                   <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
@@ -380,7 +380,7 @@ export function Finanzas() {
               <div className="flex-1">
                 <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>Utilidad del Mes</p>
                 <p className={`text-3xl ${utilidadMes >= 0 ? 'text-green-500' : 'text-red-500'} mb-2`}>
-                  ${Math.abs(utilidadMes).toLocaleString()}
+                  S/ {Math.abs(utilidadMes).toLocaleString()}
                 </p>
                 <p className={`text-sm ${utilidadMes >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {utilidadMes >= 0 ? '✓ Ganancia' : '✗ Pérdida'}
@@ -471,7 +471,7 @@ export function Finanzas() {
                       <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{nombreClinica}</p>
                     </div>
                     <p className={`text-2xl ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>
-                      ${monto.toLocaleString()}
+                      S/ {monto.toLocaleString()}
                     </p>
                     <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'} mb-2`}>
                       {porcentaje.toFixed(1)}% del total
@@ -513,7 +513,7 @@ export function Finanzas() {
                   >
                     <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>{tipo}</p>
                     <p className={`text-2xl ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                      ${monto.toLocaleString()}
+                      S/ {monto.toLocaleString()}
                     </p>
                     <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-2">
                       <div
@@ -637,7 +637,7 @@ export function Finanzas() {
                   >
                     <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>{categoria}</p>
                     <p className={`text-2xl ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                      ${monto.toLocaleString()}
+                      S/ {monto.toLocaleString()}
                     </p>
                     <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-2">
                       <div
@@ -658,7 +658,7 @@ export function Finanzas() {
                     Registro de Gastos
                   </h3>
                   <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    Total de gastos: ${gastosMes.toLocaleString()}
+                    Total de gastos: S/ {gastosMes.toLocaleString()}
                   </p>
                 </div>
                 <Button
@@ -762,13 +762,13 @@ export function Finanzas() {
               <Card className={`p-6 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'}`}>
                 <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>Total por Cobrar</p>
                 <p className={`text-3xl ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  ${totalPorCobrar.toLocaleString()}
+                  S/ {totalPorCobrar.toLocaleString()}
                 </p>
               </Card>
               <Card className={`p-6 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'}`}>
                 <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>Facturas Vencidas</p>
                 <p className={`text-3xl text-red-500`}>
-                  ${totalVencido.toLocaleString()}
+                  S/ {totalVencido.toLocaleString()}
                 </p>
                 <p className={`text-sm text-red-400`}>{cuentasVencidas.length} facturas</p>
               </Card>
@@ -843,7 +843,7 @@ export function Finanzas() {
                             </Badge>
                           </td>
                           <td className={`px-6 py-4 whitespace-nowrap text-right text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                            ${factura.total.toLocaleString()}
+                            S/ {factura.total.toLocaleString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-center">
                             <Button
@@ -880,7 +880,7 @@ export function Finanzas() {
               <Card className={`p-6 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'}`}>
                 <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>Total por Pagar</p>
                 <p className={`text-3xl ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  ${totalPorPagar.toLocaleString()}
+                  S/ {totalPorPagar.toLocaleString()}
                 </p>
               </Card>
               <Card className={`p-6 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'}`}>
@@ -974,7 +974,7 @@ export function Finanzas() {
                             </Badge>
                           </td>
                           <td className={`px-6 py-4 whitespace-nowrap text-right text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                            ${cuenta.monto.toLocaleString()}
+                            S/ {cuenta.monto.toLocaleString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-center">
                             <div className="flex items-center justify-center gap-2">
@@ -1025,12 +1025,12 @@ export function Finanzas() {
                     {Object.entries(ingresosPorCategoria).map(([tipo, monto]: [string, any]) => (
                       <div key={tipo} className="flex items-center justify-between">
                         <span className={`${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{tipo}</span>
-                        <span className="text-green-600">${monto.toLocaleString()}</span>
+                        <span className="text-green-600">S/ {monto.toLocaleString()}</span>
                       </div>
                     ))}
                     <div className={`flex items-center justify-between pt-3 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                       <span className={`${darkMode ? 'text-white' : 'text-gray-900'}`}>Total Ingresos</span>
-                      <span className="text-green-600 text-xl">${ingresosMes.toLocaleString()}</span>
+                      <span className="text-green-600 text-xl">S/ {ingresosMes.toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
@@ -1061,16 +1061,16 @@ export function Finanzas() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className={`p-6 rounded-xl ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
                     <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-2`}>Ingresos Totales</p>
-                    <p className="text-3xl text-green-600">${ingresosMes.toLocaleString()}</p>
+                    <p className="text-3xl text-green-600">S/ {ingresosMes.toLocaleString()}</p>
                   </div>
                   <div className={`p-6 rounded-xl ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
                     <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-2`}>Gastos Totales</p>
-                    <p className="text-3xl text-rose-600">${gastosMes.toLocaleString()}</p>
+                    <p className="text-3xl text-rose-600">S/ {gastosMes.toLocaleString()}</p>
                   </div>
                   <div className={`p-6 rounded-xl ${utilidadMes >= 0 ? 'bg-gradient-to-br from-green-500/20 to-emerald-500/20' : 'bg-gradient-to-br from-red-500/20 to-rose-500/20'}`}>
                     <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-2`}>Utilidad Neta</p>
                     <p className={`text-3xl ${utilidadMes >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      ${Math.abs(utilidadMes).toLocaleString()}
+                      S/ {Math.abs(utilidadMes).toLocaleString()}
                     </p>
                     <p className={`text-sm mt-2 ${utilidadMes >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {utilidadMes >= 0 ? '✓ Ganancia' : '✗ Pérdida'}
@@ -1088,7 +1088,7 @@ export function Finanzas() {
                       <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>Cuentas por Cobrar</span>
                       <Clock className="w-5 h-5 text-blue-500" />
                     </div>
-                    <p className="text-2xl text-blue-600">${totalPorCobrar.toLocaleString()}</p>
+                    <p className="text-2xl text-blue-600">S/ {totalPorCobrar.toLocaleString()}</p>
                     <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mt-1`}>
                       {cuentasPorCobrar.length} facturas pendientes
                     </p>
@@ -1098,7 +1098,7 @@ export function Finanzas() {
                       <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>Cuentas por Pagar</span>
                       <AlertCircle className="w-5 h-5 text-orange-500" />
                     </div>
-                    <p className="text-2xl text-orange-600">${totalPorPagar.toLocaleString()}</p>
+                    <p className="text-2xl text-orange-600">S/ {totalPorPagar.toLocaleString()}</p>
                     <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mt-1`}>
                       {cuentasPagarPendientes.length} cuentas pendientes
                     </p>

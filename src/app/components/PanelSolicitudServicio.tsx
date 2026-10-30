@@ -569,7 +569,7 @@ export function PanelSolicitudServicio({ isOpen, onClose, fromAgenda = false, pr
                     Tarifa del servicio
                   </span>
                   <span className="text-2xl font-black" style={{ color: '#F97316' }}>
-                    ${especialistaActual?.tarifa.toLocaleString() || '0'}
+                    S/ {especialistaActual?.tarifa.toLocaleString() || '0'}
                   </span>
                 </div>
               </div>

@@ -784,16 +784,16 @@ function PermisosVisualization({ roleId, darkMode }: { roleId: string, darkMode:
   return (
     <div className="space-y-2">
       {modulos.map(modulo => {
-        const permisos = role.permisos[modulo] || [];
+        const permisos: string[] = role.permisos[modulo.id] || [];
         if (permisos.length === 0) return null;
 
         return (
           <div 
-            key={modulo}
+            key={modulo.id}
             className={`p-3 rounded-lg ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}
           >
             <span className={`capitalize ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-              {modulo}:
+              {modulo.nombre}:
             </span>
             <div className="flex flex-wrap gap-2 mt-2">
               {permisos.map((permiso: string) => (

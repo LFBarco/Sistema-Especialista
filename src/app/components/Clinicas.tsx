@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { 
   Building2, MapPin, Phone, Mail, Star, TrendingUp, DollarSign, Calendar,
   Search, Filter, Grid3x3, List, Plus, X, Map, PhoneCall, MessageSquare,
-  Users, Clock, Award, AlertCircle, Edit, Trash2, BarChart3, Eye, ExternalLink
+  Users, Clock, Award, AlertCircle, Edit, Trash2, BarChart3, Eye, ExternalLink, Link2
 } from 'lucide-react';
 import { useApp } from '../App';
+import { AfiliacionesPanel } from './integracion/AfiliacionesPanel';
 
 interface Clinica {
   id: number;
@@ -29,37 +30,42 @@ interface Clinica {
 export function Clinicas() {
   const { userClinicas, servicios, facturas, navegarA, darkMode } = useApp();
 
-  // Mapear clínicas del contexto al formato local del componente
-  const clinicasFromContext: Clinica[] = userClinicas.map((c: any, index: number) => {
-    const serviciosClinica = servicios.filter(s => s.clinica === c.nombre);
-    const facturasClinica = facturas.filter(f => f.clinica === c.nombre);
-    const totalFacturado = facturasClinica.reduce((acc, f) => acc + f.total, 0);
-    const ultimoServicio = serviciosClinica.length > 0
-      ? serviciosClinica.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())[0].fecha
-      : '';
+  // Siempre derivado del contexto (afiliaciones / integración), no de un snapshot stale
+  const clinicas = useMemo<Clinica[]>(() => {
+    return userClinicas.map((c: any, index: number) => {
+      const serviciosClinica = servicios.filter((s) => s.clinica === c.nombre);
+      const facturasClinica = facturas.filter((f) => f.clinica === c.nombre);
+      const totalFacturado = facturasClinica.reduce((acc, f) => acc + f.total, 0);
+      const ultimoServicio =
+        serviciosClinica.length > 0
+          ? [...serviciosClinica].sort(
+              (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
+            )[0].fecha
+          : '';
 
-    return {
-      id: typeof c.id === 'number' ? c.id : index + 1,
-      nombre: c.nombre || '',
-      direccion: c.direccion || '',
-      ciudad: '',
-      telefono: c.telefono || '',
-      email: c.contacto || '',
-      whatsapp: '',
-      contacto: c.contacto || '',
-      cargo: '',
-      serviciosRealizados: serviciosClinica.length,
-      totalFacturado,
-      ultimoServicio,
-      rating: 0,
-      estado: 'activa' as const,
-      relacionEstado: 'activa' as const,
-      categorias: [],
-      coordenadas: { lat: 0, lng: 0 }
-    };
-  });
+      return {
+        id: typeof c.id === 'number' ? Number(String(c.id).replace(/\D/g, '') || index + 1) : index + 1,
+        nombre: c.nombre || '',
+        direccion: c.direccion || '',
+        ciudad: c.ciudad || '',
+        telefono: c.telefono || '',
+        email: c.contacto || '',
+        whatsapp: '',
+        contacto: c.contacto || '',
+        cargo: '',
+        serviciosRealizados: serviciosClinica.length,
+        totalFacturado,
+        ultimoServicio,
+        rating: 0,
+        estado: 'activa' as const,
+        relacionEstado: 'activa' as const,
+        categorias: [],
+        coordenadas: { lat: 0, lng: 0 },
+        contextId: String(c.id),
+      } as Clinica & { contextId?: string };
+    });
+  }, [userClinicas, servicios, facturas]);
 
-  const [clinicas, setClinicas] = useState<Clinica[]>(clinicasFromContext);
   const [clinicaSeleccionada, setClinicaSeleccionada] = useState<Clinica | null>(null);
   const [vistaActual, setVistaActual] = useState<'grid' | 'list' | 'map'>('grid');
   const [mostrarAgregar, setMostrarAgregar] = useState(false);
@@ -84,7 +90,8 @@ export function Clinicas() {
   const totalClinicas = clinicas.length;
   const totalServicios = clinicas.reduce((acc, c) => acc + c.serviciosRealizados, 0);
   const totalFacturado = clinicas.reduce((acc, c) => acc + c.totalFacturado, 0);
-  const promedioRating = clinicas.reduce((acc, c) => acc + c.rating, 0) / clinicas.length;
+  const promedioRating =
+    clinicas.length > 0 ? clinicas.reduce((acc, c) => acc + c.rating, 0) / clinicas.length : 0;
 
   // Filtrar clínicas
   const clinicasFiltradas = clinicas.filter(clinica => {
@@ -118,107 +125,130 @@ export function Clinicas() {
 
   const handleAgregarClinica = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const nuevaClinica: Clinica = {
-      id: Math.max(...clinicas.map(c => c.id)) + 1,
-      ...formData,
-      serviciosRealizados: 0,
-      totalFacturado: 0,
-      ultimoServicio: '',
-      rating: 0,
-      estado: 'activa',
-      relacionEstado: 'nueva',
-      categorias: [],
-      coordenadas: { lat: 4.7110, lng: -74.0721 }
-    };
-
-    setClinicas([...clinicas, nuevaClinica]);
     setMostrarAgregar(false);
-    setFormData({
-      nombre: '',
-      direccion: '',
-      ciudad: '',
-      telefono: '',
-      email: '',
-      whatsapp: '',
-      contacto: '',
-      cargo: ''
-    });
   };
 
-  const handleEliminarClinica = (id: number) => {
-    if (confirm('¿Estás seguro de eliminar esta clínica?')) {
-      setClinicas(clinicas.filter(c => c.id !== id));
-      setClinicaSeleccionada(null);
-    }
+  const handleEliminarClinica = (_id: number) => {
+    setClinicaSeleccionada(null);
   };
+
+  const cardBg = darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
+  const textMuted = darkMode ? 'text-gray-400' : 'text-gray-600';
+  const textMain = darkMode ? 'text-gray-100' : 'text-gray-900';
 
   return (
-    <div className="p-6 space-y-6">
+    <div className={`p-4 sm:p-6 space-y-6 min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-gray-100">Clínicas Asociadas</h1>
-          <p className="text-gray-400">Gestiona tu red de clínicas y revisa tu historial con cada una</p>
+          <h1 className={`text-3xl font-bold ${textMain}`}>Mi red de clínicas</h1>
+          <p className={`text-sm mt-1 ${textMuted}`}>
+            Afiliaciones con clínicas conectadas (Veterinari). Aquí ves historial, honorarios y acceso rápido.
+          </p>
         </div>
-        <button 
-          onClick={() => setMostrarAgregar(true)}
-          className="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Agregar Clínica
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => navegarA('solicitudes')}
+            className="px-4 py-2 text-sm text-white bg-orange-500 hover:bg-orange-600 rounded-lg transition-colors flex items-center gap-2"
+          >
+            <Calendar className="w-4 h-4" />
+            Solicitudes
+          </button>
+          <button
+            type="button"
+            onClick={() => navegarA('mensajes')}
+            className={`px-4 py-2 text-sm rounded-lg border transition-colors flex items-center gap-2 ${
+              darkMode ? 'border-gray-600 text-gray-200 hover:bg-gray-800' : 'border-gray-300 text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            <MessageSquare className="w-4 h-4" />
+            Mensajes
+          </button>
+        </div>
       </div>
 
+      <AfiliacionesPanel />
+
+      {clinicas.length === 0 && (
+        <div className={`rounded-xl border p-8 text-center ${cardBg}`}>
+          <Link2 className="w-12 h-12 mx-auto text-orange-500 mb-3" />
+          <h2 className={`text-lg font-semibold ${textMain}`}>Aún no tienes clínicas en tu red</h2>
+          <p className={`text-sm mt-2 max-w-md mx-auto ${textMuted}`}>
+            Cuando una clínica en Veterinari te invite y apruebes la afiliación arriba, aparecerá aquí con
+            métricas, historial y acceso a agenda / honorarios.
+          </p>
+          <button
+            type="button"
+            onClick={() => navegarA('perfil-profesional')}
+            className="mt-4 px-4 py-2 text-sm bg-orange-500 hover:bg-orange-600 text-white rounded-lg"
+          >
+            Completar perfil para ser encontrado
+          </button>
+        </div>
+      )}
+
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div className={`rounded-xl border p-5 ${cardBg}`}>
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-sm text-gray-400 mb-1">Clínicas Activas</p>
-              <p className="text-gray-100 mb-2">{totalClinicas}</p>
-              <p className="text-sm text-green-400">+2 este mes</p>
+              <p className={`text-sm mb-1 ${textMuted}`}>Clínicas activas</p>
+              <p className={`text-2xl font-bold ${textMain}`}>{totalClinicas}</p>
+              <p className={`text-sm ${textMuted}`}>En tu red</p>
             </div>
-            <div className="bg-blue-900/50 text-blue-400 p-3 rounded-lg">
+            <div className="bg-orange-500/15 text-orange-500 p-3 rounded-lg">
               <Building2 className="w-6 h-6" />
             </div>
           </div>
         </div>
 
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
+        <div className={`rounded-xl border p-5 ${cardBg}`}>
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-sm text-gray-400 mb-1">Servicios Totales</p>
-              <p className="text-gray-100 mb-2">{totalServicios}</p>
-              <p className="text-sm text-gray-500">En todas las clínicas</p>
+              <p className={`text-sm mb-1 ${textMuted}`}>Servicios totales</p>
+              <p className={`text-2xl font-bold ${textMain}`}>{totalServicios}</p>
+              <p className={`text-sm ${textMuted}`}>En todas las clínicas</p>
             </div>
-            <div className="bg-green-900/50 text-green-400 p-3 rounded-lg">
+            <div className="bg-green-500/15 text-green-500 p-3 rounded-lg">
               <TrendingUp className="w-6 h-6" />
             </div>
           </div>
         </div>
 
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
+        <div className={`rounded-xl border p-5 ${cardBg}`}>
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-sm text-gray-400 mb-1">Facturación Total</p>
-              <p className="text-gray-100 mb-2">${totalFacturado.toLocaleString()}</p>
-              <p className="text-sm text-purple-400">+12% vs mes anterior</p>
+              <p className={`text-sm mb-1 ${textMuted}`}>Honorarios emitidos</p>
+              <p className={`text-2xl font-bold ${textMain}`}>S/ {totalFacturado.toLocaleString()}</p>
+              <p className={`text-sm ${textMuted}`}>Pre-facturas / recibos</p>
             </div>
-            <div className="bg-purple-900/50 text-purple-400 p-3 rounded-lg">
+            <div className="bg-orange-500/15 text-orange-500 p-3 rounded-lg">
               <DollarSign className="w-6 h-6" />
             </div>
           </div>
         </div>
 
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
+        <div className={`rounded-xl border p-5 ${cardBg}`}>
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-sm text-gray-400 mb-1">Rating Promedio</p>
-              <p className="text-gray-100 mb-2">{promedioRating.toFixed(1)} ⭐</p>
-              <p className="text-sm text-gray-500">Satisfacción general</p>
+              <p className={`text-sm mb-1 ${textMuted}`}>Acciones rápidas</p>
+              <button
+                type="button"
+                onClick={() => navegarA('facturacion')}
+                className="text-sm font-medium text-orange-500 hover:underline mt-1 block"
+              >
+                Ver honorarios →
+              </button>
+              <button
+                type="button"
+                onClick={() => navegarA('agenda')}
+                className="text-sm font-medium text-orange-500 hover:underline mt-1 block"
+              >
+                Abrir agenda →
+              </button>
             </div>
-            <div className="bg-yellow-900/50 text-yellow-400 p-3 rounded-lg">
+            <div className="bg-yellow-500/15 text-yellow-500 p-3 rounded-lg">
               <Award className="w-6 h-6" />
             </div>
           </div>
@@ -419,7 +449,7 @@ export function Clinicas() {
                   </div>
                   <div className="text-center p-2 bg-gray-900/50 rounded-lg">
                     <p className="text-xs text-gray-500 mb-1">Facturado</p>
-                    <p className="text-sm text-gray-200">${clinica.totalFacturado.toLocaleString()}</p>
+                    <p className="text-sm text-gray-200">S/ {clinica.totalFacturado.toLocaleString()}</p>
                   </div>
                 </div>
 
@@ -493,7 +523,7 @@ export function Clinicas() {
                     <p className="text-sm text-gray-200">{clinica.serviciosRealizados}</p>
                   </td>
                   <td className="px-6 py-4">
-                    <p className="text-sm text-gray-200">${clinica.totalFacturado.toLocaleString()}</p>
+                    <p className="text-sm text-gray-200">S/ {clinica.totalFacturado.toLocaleString()}</p>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center">
@@ -864,7 +894,7 @@ export function Clinicas() {
                       <DollarSign className="w-4 h-4 text-green-400" />
                       <p className="text-xs text-gray-400">Total Facturado</p>
                     </div>
-                    <p className="text-gray-100">${clinicaSeleccionada.totalFacturado.toLocaleString()}</p>
+                    <p className="text-gray-100">S/ {clinicaSeleccionada.totalFacturado.toLocaleString()}</p>
                     <p className="text-xs text-gray-500 mt-1">ingreso total</p>
                   </div>
                   <div className="bg-purple-900/30 border border-purple-700 rounded-lg p-4">
@@ -873,7 +903,7 @@ export function Clinicas() {
                       <p className="text-xs text-gray-400">Tarifa Promedio</p>
                     </div>
                     <p className="text-gray-100">
-                      ${clinicaSeleccionada.serviciosRealizados > 0 ? Math.round(clinicaSeleccionada.totalFacturado / clinicaSeleccionada.serviciosRealizados) : 0}
+                      S/ {clinicaSeleccionada.serviciosRealizados > 0 ? Math.round(clinicaSeleccionada.totalFacturado / clinicaSeleccionada.serviciosRealizados) : 0}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">por servicio</p>
                   </div>
@@ -930,7 +960,7 @@ export function Clinicas() {
                           </p>
                         </div>
                         <div className="text-right">
-                          <span className="text-sm text-gray-200">${s.tarifa.toLocaleString()}</span>
+                          <span className="text-sm text-gray-200">S/ {s.tarifa.toLocaleString()}</span>
                           <p className={`text-xs ${estadoColores[s.estado] || 'text-gray-400'}`}>
                             {s.estado.charAt(0).toUpperCase() + s.estado.slice(1)}
                           </p>

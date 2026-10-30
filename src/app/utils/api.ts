@@ -280,5 +280,10 @@ export const systemAPI = {
     return fetchAPI('/reset-data', {
       method: 'POST'
     });
+  },
+  async asignarDatosAntiguos(): Promise<{ success: boolean; total: number; resumen: Record<string, number> }> {
+    return fetchAPI('/admin/asignar-dueno', {
+      method: 'POST'
+    }, 0);
   }
 };

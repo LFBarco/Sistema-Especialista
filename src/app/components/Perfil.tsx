@@ -261,7 +261,7 @@ export function Perfil() {
           <div>
             <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Ecocardiograma</label>
             <div className="relative">
-              <span className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>$</span>
+              <span className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>S/</span>
               <input
                 type="number"
                 value={perfil.tarifas.ecocardiograma}
@@ -282,7 +282,7 @@ export function Perfil() {
           <div>
             <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Consulta Cardiológica</label>
             <div className="relative">
-              <span className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>$</span>
+              <span className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>S/</span>
               <input
                 type="number"
                 value={perfil.tarifas.consultaCardiologica}
@@ -303,7 +303,7 @@ export function Perfil() {
           <div>
             <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Electrocardiograma</label>
             <div className="relative">
-              <span className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>$</span>
+              <span className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>S/</span>
               <input
                 type="number"
                 value={perfil.tarifas.electrocardiograma}
@@ -324,7 +324,7 @@ export function Perfil() {
           <div>
             <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Seguimiento</label>
             <div className="relative">
-              <span className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>$</span>
+              <span className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>S/</span>
               <input
                 type="number"
                 value={perfil.tarifas.seguimiento}

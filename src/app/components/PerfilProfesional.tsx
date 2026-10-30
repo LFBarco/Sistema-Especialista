@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowLeft, User, Star, MapPin, DollarSign, Save, Eye, Award, Upload, X, CheckCircle } from 'lucide-react';
 import { useApp } from '../App';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -7,28 +7,52 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
+import { especialistasAPI } from '../utils/api';
+
+const FOTO_MAX_BYTES = 1024 * 1024;
 
 export function PerfilProfesional() {
-  const { darkMode, navegarA } = useApp();
+  const { darkMode, navegarA, especialistas, setEspecialistas, usuarioActual } = useApp();
+  const miEspecialista: any = especialistas.find(
+    e => !!usuarioActual?.email && e.email?.toLowerCase() === usuarioActual.email.toLowerCase()
+  );
   
   // Estados del perfil
   const [fotoPerfil, setFotoPerfil] = useState<string | null>(null);
-  const [nombre, setNombre] = useState('Juan');
-  const [apellido, setApellido] = useState('Pérez');
-  const [especialidadPrincipal, setEspecialidadPrincipal] = useState('Cardiología');
-  const [especialidadesSecundarias, setEspecialidadesSecundarias] = useState<string[]>(['Medicina Interna']);
-  const [anosExperiencia, setAnosExperiencia] = useState('8');
-  const [ciudad, setCiudad] = useState('Medellín');
-  const [bio, setBio] = useState('Especialista en Cardiología Veterinaria con más de 8 años de experiencia. Enfoque en diagnóstico preciso mediante ecocardiografía y tratamientos de última generación. Comprometido con el bienestar animal y la medicina basada en evidencia.');
-  const [tarifaConsulta, setTarifaConsulta] = useState('250');
-  const [tarifaCirugia, setTarifaCirugia] = useState('600');
-  const [tarifaUrgencia, setTarifaUrgencia] = useState('350');
-  const [modalidades, setModalidades] = useState<string[]>(['Presencial', 'Remoto']);
-  const [certificaciones, setCertificaciones] = useState<string[]>([
-    'Diplomado en Cardiología Veterinaria Avanzada',
-    'Certificación Internacional en Ecocardiografía'
-  ]);
+  const [nombre, setNombre] = useState('');
+  const [apellido, setApellido] = useState('');
+  const [especialidadPrincipal, setEspecialidadPrincipal] = useState('');
+  const [especialidadesSecundarias, setEspecialidadesSecundarias] = useState<string[]>([]);
+  const [anosExperiencia, setAnosExperiencia] = useState('');
+  const [ciudad, setCiudad] = useState('');
+  const [bio, setBio] = useState('');
+  const [tarifaConsulta, setTarifaConsulta] = useState('');
+  const [tarifaCirugia, setTarifaCirugia] = useState('');
+  const [tarifaUrgencia, setTarifaUrgencia] = useState('');
+  const [modalidades, setModalidades] = useState<string[]>([]);
+  const [certificaciones, setCertificaciones] = useState<string[]>([]);
   const [nuevaCertificacion, setNuevaCertificacion] = useState('');
+  const [perfilCargadoId, setPerfilCargadoId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!miEspecialista || perfilCargadoId === miEspecialista.id) return;
+    const texto = (v: any) => (v === undefined || v === null ? '' : String(v));
+    const lista = (v: any) => (Array.isArray(v) ? v.map(String) : []);
+    setFotoPerfil(miEspecialista.foto || null);
+    setNombre(texto(miEspecialista.nombre));
+    setApellido(texto(miEspecialista.apellido));
+    setEspecialidadPrincipal(texto(miEspecialista.especialidad));
+    setEspecialidadesSecundarias(lista(miEspecialista.especialidadesSecundarias));
+    setAnosExperiencia(texto(miEspecialista.experiencia));
+    setCiudad(texto(miEspecialista.ciudad));
+    setBio(texto(miEspecialista.descripcion));
+    setTarifaConsulta(texto(miEspecialista.tarifa));
+    setTarifaCirugia(texto(miEspecialista.tarifaCirugia));
+    setTarifaUrgencia(texto(miEspecialista.tarifaUrgencia));
+    setModalidades(lista(miEspecialista.modalidad));
+    setCertificaciones(lista(miEspecialista.certificaciones));
+    setPerfilCargadoId(miEspecialista.id);
+  }, [miEspecialista, perfilCargadoId]);
 
   const [guardando, setGuardando] = useState(false);
   const [mostrarPreview, setMostrarPreview] = useState(true);
@@ -48,6 +72,10 @@ export function PerfilProfesional() {
 
   const handleFotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    if (file && file.size > FOTO_MAX_BYTES) {
+      toast.error('La foto debe pesar menos de 1 MB');
+      return;
+    }
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -87,13 +115,47 @@ export function PerfilProfesional() {
     toast.info('Certificación eliminada');
   };
 
-  const guardarPerfil = () => {
+  const guardarPerfil = async () => {
+    if (!miEspecialista) {
+      toast.error('No encontramos tu ficha de especialista', {
+        description: 'Completa tu registro como especialista o contacta a soporte.'
+      });
+      return;
+    }
+    if (!nombre.trim() || !apellido.trim()) {
+      toast.error('Nombre y apellido son obligatorios');
+      return;
+    }
+
+    const aNumero = (v: string) => (v.trim() === '' ? 0 : Number(v) || 0);
+    const actualizado = {
+      ...miEspecialista,
+      nombre: nombre.trim(),
+      apellido: apellido.trim(),
+      especialidad: especialidadPrincipal,
+      especialidadesSecundarias,
+      experiencia: aNumero(anosExperiencia),
+      ciudad: ciudad.trim(),
+      descripcion: bio.trim(),
+      tarifa: aNumero(tarifaConsulta),
+      tarifaCirugia: aNumero(tarifaCirugia),
+      tarifaUrgencia: aNumero(tarifaUrgencia),
+      modalidad: modalidades,
+      certificaciones,
+      foto: fotoPerfil || undefined,
+    };
+
     setGuardando(true);
-    // Simular guardado
-    setTimeout(() => {
-      setGuardando(false);
+    try {
+      await especialistasAPI.update(miEspecialista.id, actualizado);
+      setEspecialistas(especialistas.map(e => (e.id === miEspecialista.id ? actualizado : e)));
       toast.success('Perfil guardado correctamente');
-    }, 1000);
+    } catch (error) {
+      console.error('Error guardando perfil profesional:', error);
+      toast.error('No se pudo guardar el perfil. Intenta de nuevo.');
+    } finally {
+      setGuardando(false);
+    }
   };
 
   const irAVerificacion = () => {
@@ -204,7 +266,7 @@ export function PerfilProfesional() {
                 Desde
               </span>
               <span className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                ${tarifaConsulta}
+                S/ {tarifaConsulta}
               </span>
             </div>
             <p className={`text-xs mt-1 ${darkMode ? 'text-gray-600' : 'text-gray-500'}`}>
@@ -323,7 +385,7 @@ export function PerfilProfesional() {
                       />
                     </label>
                     <p className={`text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-600'}`}>
-                      JPG, PNG o GIF. Máx 2MB.
+                      JPG, PNG o GIF. Máx 1 MB.
                     </p>
                   </div>
                 </div>

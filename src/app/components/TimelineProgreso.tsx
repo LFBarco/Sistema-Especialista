@@ -2,7 +2,7 @@ import { Check, Clock, FileText, Stethoscope, X } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface TimelineProgresoProps {
-  estado: 'pendiente' | 'aceptada' | 'rechazada';
+  estado: 'pendiente' | 'aceptada' | 'rechazada' | 'cancelada';
   darkMode: boolean;
   servicioRealizado?: boolean;
   facturaEmitida?: boolean;
@@ -21,7 +21,7 @@ export function TimelineProgreso({ estado, darkMode, servicioRealizado = false, 
       label: 'Aceptada',
       icon: Check,
       completed: estado === 'aceptada',
-      cancelled: estado === 'rechazada',
+      cancelled: estado === 'rechazada' || estado === 'cancelada',
     },
     {
       id: 3,

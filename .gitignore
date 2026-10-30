@@ -2,6 +2,13 @@
 .env
 .env.local
 
+# Documentación confidencial de integración (no subir a GitHub público)
+docs/
+
+# Secretos generados por scripts locales
+**/_secrets*
+**/*_NO_SUBIR*
+
 # Dependencias (esta carpeta es pesadísima y no debe subirse)
 node_modules/
 
@@ -13,3 +20,4 @@ build/
 npm-debug.log*
 .eslintcache
 .vite/
+.vercel

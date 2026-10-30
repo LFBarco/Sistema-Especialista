@@ -175,7 +175,7 @@ export function SelectorEspecialista({ compact = false, onSelect }: SelectorEspe
                             •
                           </span>
                           <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                            ${especialista.tarifa}
+                            S/ {especialista.tarifa}
                           </span>
                         </div>
                       </div>
@@ -292,7 +292,7 @@ export function SelectorEspecialista({ compact = false, onSelect }: SelectorEspe
                   </span>
                   <span className={`${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>•</span>
                   <span className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                    ${especialista.tarifa}
+                    S/ {especialista.tarifa}
                   </span>
                 </div>
               </div>

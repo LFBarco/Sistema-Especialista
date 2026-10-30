@@ -97,14 +97,18 @@ export function SolicitudesV2() {
     }
   };
 
-  const handleAceptarSolicitud = (id: number, paciente: string, fecha: string) => {
-    aceptarSolicitud(id);
-    toast.success(`Cita agendada para ${paciente}`);
+  const handleAceptarSolicitud = async (id: number, paciente: string, _fecha: string) => {
+    await aceptarSolicitud(id);
+    toast.success(`«${paciente}» en tu agenda`, {
+      action: {
+        label: 'Ver agenda',
+        onClick: () => navegarA('agenda'),
+      },
+    });
   };
 
   const handleRechazarSolicitud = (id: number) => {
     rechazarSolicitud(id);
-    toast.info('Solicitud rechazada');
   };
 
   const urgenciaConfig = {
@@ -152,6 +156,12 @@ export function SolicitudesV2() {
       color: darkMode ? '#6B7280' : '#9CA3AF',
       bg: darkMode ? 'rgba(107, 114, 128, 0.15)' : 'rgba(156, 163, 175, 0.1)',
       border: darkMode ? 'rgba(107, 114, 128, 0.3)' : 'rgba(156, 163, 175, 0.2)'
+    },
+    cancelada: { 
+      label: 'Cancelada',
+      color: '#EF4444',
+      bg: darkMode ? 'rgba(239, 68, 68, 0.12)' : 'rgba(239, 68, 68, 0.08)',
+      border: darkMode ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.2)'
     }
   };
 
@@ -298,8 +308,8 @@ export function SolicitudesV2() {
       <div className="space-y-4">
         <AnimatePresence mode="popLayout">
           {solicitudesFiltradas.map((solicitud) => {
-            const urgencia = urgenciaConfig[solicitud.urgencia];
-            const estado = estadoConfig[solicitud.estado];
+            const urgencia = urgenciaConfig[solicitud.urgencia] || urgenciaConfig.media;
+            const estado = estadoConfig[solicitud.estado] || estadoConfig.pendiente;
             const isExpanded = expandedId === solicitud.id;
             const isHovered = hoveredId === solicitud.id;
             const clinica = getClinicaByNombre(solicitud.clinica);
@@ -384,7 +394,7 @@ export function SolicitudesV2() {
                         className="text-4xl font-black mb-1"
                         style={{ color: '#F97316' }}
                       >
-                        ${solicitud.tarifa.toLocaleString()}
+                        S/ {solicitud.tarifa.toLocaleString()}
                       </p>
                       <p 
                         className="text-xs font-medium"
@@ -786,7 +796,7 @@ export function SolicitudesV2() {
                       <option value="">Seleccione un servicio</option>
                       {configServicios.filter(s => s.activo).map((servicio) => (
                         <option key={servicio.id} value={servicio.nombre}>
-                          {servicio.nombre} {servicio.metadata?.precio ? `($${servicio.metadata.precio.toLocaleString()})` : ''}
+                          {servicio.nombre} {servicio.metadata?.precio ? `(S/ ${servicio.metadata.precio.toLocaleString()})` : ''}
                         </option>
                       ))}
                     </select>
@@ -834,7 +844,7 @@ export function SolicitudesV2() {
                       Tarifa Estimada ($)
                     </label>
                     <div className="relative">
-                      <span className="absolute left-3 top-2.5 text-gray-400 font-bold">$</span>
+                      <span className="absolute left-3 top-2.5 text-gray-400 font-bold">S/</span>
                       <input
                         type="number"
                         value={formData.tarifa}

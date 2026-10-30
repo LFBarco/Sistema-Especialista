@@ -179,7 +179,7 @@ export function RegistroPagosModal({ isOpen, onClose, factura }: RegistroPagosMo
                       Total
                     </p>
                     <p className={`font-bold text-lg ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
-                      ${factura.total.toLocaleString()}
+                      S/ {factura.total.toLocaleString()}
                     </p>
                   </div>
                   <div>
